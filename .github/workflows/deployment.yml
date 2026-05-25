@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-
+  AWS_REGION: eu-south-2
   S3_BUCKET: ${{ secrets.S3_BUCKET }}
   S3_KEY: builds/${{ github.sha }}.zip
 
