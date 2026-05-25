@@ -34,14 +34,8 @@ jobs:
 
       - name: Package deployment bundle
         run: |
-          mkdir -p deploy/scripts
-          cp target/*.jar deploy/app.jar
-          cp appspec.yml deploy/appspec.yml
-          cp scripts/*.sh deploy/scripts/
-          # Strip Windows line endings, just in case
-          sed -i 's/\r$//' deploy/scripts/*.sh deploy/appspec.yml
-          chmod +x deploy/scripts/*.sh
-          cd deploy && zip -r ../bundle.zip .
+          ./mwvw clean package -DskipTests
+
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
