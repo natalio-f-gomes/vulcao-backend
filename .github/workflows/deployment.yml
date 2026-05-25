@@ -13,8 +13,8 @@ env:
   AWS_REGION: eu-south-2
   S3_BUCKET: ${{ secrets.S3_BUCKET }}
   S3_KEY: builds/${{ github.sha }}.zip
-  CODEDEPLOY_APP: vulcao-backend           # CodeDeploy application name
-  CODEDEPLOY_GROUP: vulcao-backend-asg     # Deployment group name
+  CODEDEPLOY_APP: vulcao-code-deploy          # CodeDeploy application name
+  CODEDEPLOY_GROUP: vulcao-development-environment     # Deployment group name
 
 jobs:
   deploy:
