@@ -26,29 +26,27 @@ public class CartItemService {
 
 
     public void addToCart(CartItemModel newItem, HttpServletRequest request, UserModel user){
-        globalAccessControl.canUserPerformAction(user, request);
+
         newItem.setId(globalAccessControl.generateNewIdForCart());
         cartItemRepository.save(newItem);
     }
 
     public List<CartItemModel> findUserCart(HttpServletRequest request, UserModel user){
-        globalAccessControl.canUserPerformAction(user, request);
+
         return cartItemRepository.findByCartId(user.getId());
     }
 
     public CartItemModel findItemById(String itemId,  HttpServletRequest request, UserModel user){
-        globalAccessControl.canUserPerformAction(user, request);
+
         return cartItemRepository.findByItemId(itemId).orElseThrow(()-> new RuntimeException("There is not Item with this id: "+ itemId));
     }
 
     public void deleteItemFromCart(String itemId,HttpServletRequest request, UserModel user){
-        globalAccessControl.canUserPerformAction(user, request);
         cartItemRepository.deleteById(itemId);
     }
 
 
     public CartItemModel updateItemQuantityByOne(String itemId, HttpServletRequest request, UserModel user){
-        globalAccessControl.canUserPerformAction(user, request);
 
         CartItemModel item = cartItemRepository.findByItemId(itemId).orElseThrow(()-> new RuntimeException("There is no item with this id: "+ itemId));
         item.setQuantity(item.getQuantity()+1);
@@ -58,8 +56,6 @@ public class CartItemService {
     }
 
     public CartItemModel updateItem(String itemId,CartItemModel updatedItem, HttpServletRequest request, UserModel user){
-        globalAccessControl.canUserPerformAction(user, request);
-
         CartItemModel item = cartItemRepository.findByItemId(itemId).orElseThrow(()-> new RuntimeException("There is no item with this id: "+ itemId));
         item.setQuantity(updatedItem.getQuantity());
         item.setItemId(updatedItem.getItemId());

@@ -244,18 +244,17 @@ public class CompanyService {
         EmployerModel creator = employerRepository.findByUsername(sessionUser).orElseThrow(()
                 -> new UsernameNotFoundException("Employer " + sessionUser + " not found"));
         System.out.println("DEBUG:: Register Company Method-> Username: " + creator.getUsername() );
-        if(globalAccessControl.canEmployerPerformAction(creator, request)){
-            newBusiness.setCreatorUsername(creator.getUsername());
-            newBusiness.onCreate();
-            try{
-                companyRepository.save(newBusiness);
-                creator.getCompaniesRegistered().add(newBusiness.getId());
-                employerRepository.update(creator);
-            }catch (Exception e){
-                System.out.println("Exception when trying to register the compay "+e);
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "A company with the same email or Tax Id already exists");
-            }
+        newBusiness.setCreatorUsername(creator.getUsername());
+        newBusiness.onCreate();
+        try{
+            companyRepository.save(newBusiness);
+            creator.getCompaniesRegistered().add(newBusiness.getId());
+            employerRepository.update(creator);
+        }catch (Exception e){
+            System.out.println("Exception when trying to register the compay "+e);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A company with the same email or Tax Id already exists");
         }
+
 
     }
 

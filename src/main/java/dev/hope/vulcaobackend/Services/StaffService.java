@@ -81,7 +81,6 @@ public class StaffService {
                 .orElseThrow(() -> new RuntimeException("Company with id " + newStaff.getCompanyId() + " not found"));
         EmployerModel executive = employerRepository.findByUsername(sessionUser)
                 .orElseThrow(() -> new UsernameNotFoundException("Executive with username" + sessionUser + " not found"));
-        globalAccessControl.canEmployerPerformAction(executive, request);
         newStaff.setCompanyId(staffCompany.getId());
         newStaff.setCompanyName(staffCompany.getName());
         newStaff.setPassword(passwordEncoder.encode(newStaff.getPassword()));
@@ -142,7 +141,6 @@ public class StaffService {
             String sessionUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
             EmployerModel employer = employerRepository.findByUsername(sessionUsername)
                     .orElseThrow(() -> new UsernameNotFoundException("Employer with username " + sessionUsername + " not found"));
-            globalAccessControl.canEmployerPerformAction(employer, request);
             StaffModel staff = staffRepository.findById(staffID).orElseThrow(() -> new RuntimeException("staff with id " + staffID + " not found"));
             staff.setAssignedPermissions(permissionsSet);
             staffRepository.save(staff);
@@ -154,7 +152,6 @@ public class StaffService {
         EmployerModel employer = employerRepository.findByUsername(sessionUsername)
                 .orElseThrow(()-> new UsernameNotFoundException("Employer with username "+ sessionUsername + " not found"));
         StaffModel staff = staffRepository.findById(staffID).orElseThrow(()-> new RuntimeException("staff with id "+ staffID + " not found"));
-        globalAccessControl.canEmployerPerformAction(employer, request);
         staff.setUsername(updatedStaff.getUsername());
         staff.setFirstName(updatedStaff.getFirstName());
         staff.setLastName(updatedStaff.getLastName());
@@ -178,7 +175,6 @@ public class StaffService {
         EmployerModel employer = employerRepository.findByUsername(sessionUsername)
                 .orElseThrow(()-> new UsernameNotFoundException("Employer with username "+ sessionUsername + " not found"));
         StaffModel staff = staffRepository.findById(staffID).orElseThrow(()-> new RuntimeException("staff with id "+ staffID + " not found"));
-        globalAccessControl.canEmployerPerformAction(employer, request);
         staff.setAssignedPermissions(newPermissions);
         staff.onUpdate();
         staffRepository.update(staff);
@@ -193,7 +189,9 @@ public class StaffService {
         if(staffAuthority.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)) {
 
             StaffModel staff = staffRepository.findById(staffID).orElseThrow(() -> new RuntimeException("staff with id " + staffID + " not found"));
-            globalAccessControl.canStaffPerformAction(staff, request, Permissions.UPDATE_STAFF);
+            if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
+                throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to update Staff");
+            }
             staff.setUsername(updatedStaff.getUsername());
             staff.setFirstName(updatedStaff.getFirstName());
             staff.setLastName(updatedStaff.getLastName());
@@ -216,7 +214,9 @@ public class StaffService {
     public void staffUpdateProfile(String staffId, UserFullName updatedStaff, HttpServletRequest request) throws AccessDeniedException{
         String sessionUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         StaffModel staff = staffRepository.findById(staffId).orElseThrow(()-> new RuntimeException("staff with id "+ staffId + " not found"));
-        globalAccessControl.canStaffPerformAction(staff, request, Permissions.UPDATE_ACCOUNT);
+        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_ACCOUNT)){
+            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
+        }
         staff.setFirstName(updatedStaff.getFirstName());
         staff.setLastName(updatedStaff.getLastName());
         staff.onUpdate();
@@ -226,45 +226,51 @@ public class StaffService {
     //EDIT STAFF CONTACT
     public void editStaffContact(String username, UserContactData updatedStaff, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel user = staffRepository.findByUsername(sessionUser).orElseThrow(
+        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!user.getUsername().equals(username)){
+        if(!staff.getUsername().equals(username)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
-        globalAccessControl.canStaffPerformAction(user, request, Permissions.UPDATE_ACCOUNT);
-        user.setEmail(updatedStaff.getEmail());
-        user.setPhoneNumber(updatedStaff.getPhoneNumber());
-        user.onUpdate();
-        staffRepository.update(user);
+        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
+            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
+        }
+        staff.setEmail(updatedStaff.getEmail());
+        staff.setPhoneNumber(updatedStaff.getPhoneNumber());
+        staff.onUpdate();
+        staffRepository.update(staff);
     }
 
     //EDIT StaffDTO INFO
     public void editStaffProfile(String username, UserFullName updatedUser, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel user = staffRepository.findByUsername(sessionUser).orElseThrow(
+        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!user.getUsername().equals(username)){
+        if(!staff.getUsername().equals(username)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
-        globalAccessControl.canStaffPerformAction(user, request, Permissions.UPDATE_ACCOUNT);
-        user.setFirstName(updatedUser.getFirstName());
-        user.setLastName(updatedUser.getLastName());
-        user.onUpdate();
-        staffRepository.update(user);
+        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
+            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
+        }
+        staff.setFirstName(updatedUser.getFirstName());
+        staff.setLastName(updatedUser.getLastName());
+        staff.onUpdate();
+        staffRepository.update(staff);
     }
 
     //EDIT USER Address
     public void editStaffAddress(String username, Address updatedAddress, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel user = staffRepository.findByUsername(sessionUser).orElseThrow(
+        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!user.getUsername().equals(username)){
+        if(!staff.getUsername().equals(username)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
-        globalAccessControl.canStaffPerformAction(user, request, Permissions.UPDATE_ACCOUNT);
-        user.setAddress(updatedAddress);
-        user.onUpdate();
-        staffRepository.update(user);
+        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
+            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
+        }
+        staff.setAddress(updatedAddress);
+        staff.onUpdate();
+        staffRepository.update(staff);
     }
 
     //EDIT CREDENTIALS
@@ -273,16 +279,18 @@ public class StaffService {
             throw new RuntimeException("BOTH USERNAME AND PASSWORD MUST BE FILLED");
         }
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel user = staffRepository.findByUsername(sessionUser).orElseThrow(
+        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!user.getUsername().equals(username)){
+        if(!staff.getUsername().equals(username)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
-        globalAccessControl.canStaffPerformAction(user, request, Permissions.UPDATE_ACCOUNT);
-        user.setUsername(newCredentials.getUsername());
-        user.setPassword(passwordEncoder.encode(newCredentials.getPassword()));
-        user.onUpdate();
-        staffRepository.update(user);
+        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
+            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
+        }
+        staff.setUsername(newCredentials.getUsername());
+        staff.setPassword(passwordEncoder.encode(newCredentials.getPassword()));
+        staff.onUpdate();
+        staffRepository.update(staff);
     }
 
 

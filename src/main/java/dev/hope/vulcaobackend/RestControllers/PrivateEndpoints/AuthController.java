@@ -117,7 +117,6 @@ public class AuthController {
         String role = globalAccessControl.determineRole(loginRequest.username());
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
-        globalAccessControl.setUserAuthenticationData(request, user, token, role);
         return ResponseEntity.ok("Logged In");
     }
 
@@ -177,7 +176,6 @@ public class AuthController {
         System.out.println("ROLE: "+ role);
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
-        globalAccessControl.setEmployerAuthenticationData(request, employer, token, role);
         return ResponseEntity.ok("Employer Logged In");
     }
 
@@ -244,7 +242,6 @@ public class AuthController {
         System.out.println("ROLE: "+ role);
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
-        globalAccessControl.setStaffAuthenticationData(request, staff, token, role);
         return ResponseEntity.ok("Employer Logged In");
     }
 

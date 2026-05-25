@@ -41,47 +41,10 @@ public class GlobalAccessControl {
     @Autowired
     private CartRepository cartRepository;
 
-    public boolean canEmployerPerformAction(EmployerModel employer, HttpServletRequest request){
-        String ip = IPService.getClientIpAddress(request);
-        List<AuthModel> authData = authRepository.findByUserIpAddress(ip);
-        if(authData.isEmpty()){throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");}
-        for(AuthModel auth: authData){
-            if(auth.getUsername().equals(employer.getUsername()) && auth.getEmail().equals(employer.getEmail())){
-                return true;
-            }
-        }
-        throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");
-    }
 
-    public boolean canUserPerformAction(UserModel user, HttpServletRequest request){
-        String ip = IPService.getClientIpAddress(request);
-        List<AuthModel> authData = authRepository.findByUserIpAddress(ip);
-        if(authData.isEmpty()){throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");}
-        for(AuthModel auth: authData){
-            if(auth.getUsername().equals(user.getUsername()) && auth.getEmail().equals(user.getEmail())){
-                return true;
-            }
-        }
-        throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");
-    }
 
-    public boolean canStaffPerformAction(StaffModel staff, HttpServletRequest request, Permissions permission){
-        String ip = IPService.getClientIpAddress(request);
-        List<AuthModel> authData = authRepository.findByUserIpAddress(ip);
-        if(authData.isEmpty()){throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");}
-        try{
-            if(!staff.getAssignedPermissions().contains(permission)){throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");}
-        }catch (NullPointerException e){
-            throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");
-        }
 
-        for(AuthModel auth: authData){
-            if(auth.getUsername().equals(staff.getUsername()) && auth.getEmail().equals(staff.getEmail())){
-                return true;
-            }
-        }
-        throw new AccessDeniedException("You do not have the permission to add a new Product. Please login");
-    }
+
 
     public static final CharSequence[] SYMBOLS = {
             "[", "]", "{", "}", ",", "=", "...",
@@ -168,34 +131,9 @@ public class GlobalAccessControl {
         return randomId;
     }
 
-    public void setUserAuthenticationData(HttpServletRequest request, UserModel user, String token, String role){
-        String ip = IPService.getClientIpAddress(request);
-        System.out.println("User IP Address "+ ip);
-        authService.loginUser(user,ip, token);
-    }
 
-    public void setEmployerAuthenticationData(HttpServletRequest request, EmployerModel employer,String token, String role){
-        String ip = IPService.getClientIpAddress(request);
-        System.out.println("User IP Address "+ ip);
-        authService.loginEmployer(employer,ip, token);
-    }
 
-    public void setStaffAuthenticationData(HttpServletRequest request, StaffModel staff, String token, String role){
-        String ip = IPService.getClientIpAddress(request);
-        System.out.println("User IP Address "+ ip);
-        authService.loginStaff(staff,ip, token);
-    }
 
-    private boolean hasMixedScripts(String username) {
-        Set<Character.UnicodeScript> scripts = new HashSet<>();
-        for (int cp : username.codePoints().toArray()) {
-            Character.UnicodeScript s = Character.UnicodeScript.of(cp);
-            if (s != Character.UnicodeScript.COMMON && s != Character.UnicodeScript.INHERITED) {
-                scripts.add(s);
-            }
-        }
-        return scripts.size() > 1;
-    }
 
     public boolean isDataValid(String... text) {
         for (String t : text) {

@@ -65,11 +65,14 @@ public class ProductService {
         System.out.println("DEBUG UPDATED_AT: " + newProduct.getUpdatedAt());
 
         globalAccessControl.isProductValid(newProduct);
-        if(globalAccessControl.canEmployerPerformAction(employer, request)){productRepository.save(newProduct);}
+        productRepository.save(newProduct);
     }
 
     public void staffSaveProduct(ProductModel newProduct, String sessionUser, HttpServletRequest request){
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no Staff with this name"));
+        if(!staff.getAssignedPermissions().contains(Permissions.ADD_PRODUCT)){
+            throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
+        }
         CompanyModel company = companyRepository.findById(newProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
         newProduct.setId(UUID.randomUUID().toString());
         newProduct.setCompanyName(company.getName());
@@ -78,7 +81,7 @@ public class ProductService {
         newProduct.setCompanyId(company.getId());
         newProduct.onCreate();
         globalAccessControl.isProductValid(newProduct);
-        if(globalAccessControl.canStaffPerformAction(staff, request, Permissions.ADD_PRODUCT)){productRepository.save(newProduct);}
+        productRepository.save(newProduct);
 
     }
 
@@ -92,9 +95,9 @@ public class ProductService {
                 .orElseThrow(() -> new UsernameNotFoundException("Employer not found"));
         ProductModel productUpdated =  updateProduct(product, updatedProduct);
         globalAccessControl.isProductValid(product);
-        if(globalAccessControl.canEmployerPerformAction(employer, request)){
-            productRepository.update(productUpdated);
-        }
+
+        productRepository.update(productUpdated);
+
     }
 
     public ProductModel updateProduct(ProductModel product, ProductModel updatedProduct){
@@ -112,26 +115,32 @@ public class ProductService {
 
     public void staffUpdateProduct(String id, ProductModel updatedProduct, String sessionUser, HttpServletRequest request){
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no Staff with this name"));
+        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_PRODUCT)){
+            throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
+        }
         CompanyModel company = companyRepository.findById(updatedProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("THERE IS NO PRODUCT WITH THIS ID"));
         globalAccessControl.isProductValid(product);
         ProductModel productUpdated =  updateProduct(product, updatedProduct);
         product.onUpdate();
-        if(globalAccessControl.canStaffPerformAction(staff, request, Permissions.UPDATE_PRODUCT)){productRepository.update(productUpdated);}
+        productRepository.update(productUpdated);
     }
 
     public void employerDeleteProduct(String productId, String sessionUser, HttpServletRequest request){
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no employer with this name"));
         ProductModel product = productRepository.findById(productId).orElseThrow(()-> new RuntimeException("There is no product with this id"));
         CompanyModel company = companyRepository.findById(product.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
-        if(globalAccessControl.canEmployerPerformAction(employer, request)){productRepository.deleteProduct(product);}
+        productRepository.deleteProduct(product);
     }
 
     public void staffDeleteProduct(String productId, String sessionUser, HttpServletRequest request){
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no Staff with this name"));
+        if(!staff.getAssignedPermissions().contains(Permissions.DELETE_PRODUCT)){
+            throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
+        }
         ProductModel product = productRepository.findById(productId).orElseThrow(()-> new RuntimeException("There is no product with this id"));
         CompanyModel company = companyRepository.findById(product.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
-        if(globalAccessControl.canStaffPerformAction(staff, request, Permissions.DELETE_PRODUCT)){productRepository.deleteProduct(product);}
+        productRepository.deleteProduct(product);
     }
 
     public List<ProductDTO> findAll(){
