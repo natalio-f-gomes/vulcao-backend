@@ -51,9 +51,9 @@ jobs:
       - name: Deploy via SSM
         run: |
           CMD_ID=$(aws ssm send-command \
+            --region eu-south-2 \
             --instance-ids i-00006eba4f6dd4b02 \
             --document-name "AWS-RunShellScript" \
-            --comment "Deploy ${{ github.sha }}" \
             --parameters 'commands=[
               "set -e",
               "cd /home/ec2-user/vulcao-backend",
@@ -65,25 +65,29 @@ jobs:
 
           echo "Command ID: $CMD_ID"
 
+          # Wait but don't fail yet
           aws ssm wait command-executed \
+            --region eu-south-2 \
             --command-id $CMD_ID \
-            --instance-id i-00006eba4f6dd4b02 || true
+            --instance-id i-00006eba4f6dd4b02 || WAIT_FAILED=1
 
-          echo "--- stdout ---"
+          # ALWAYS print output regardless
+          echo "=== STDOUT ==="
           aws ssm get-command-invocation \
+            --region eu-south-2 \
             --command-id $CMD_ID \
             --instance-id i-00006eba4f6dd4b02 \
             --query 'StandardOutputContent' --output text
 
-          echo "--- stderr ---"
+          echo "=== STDERR ==="
           aws ssm get-command-invocation \
+            --region eu-south-2 \
             --command-id $CMD_ID \
             --instance-id i-00006eba4f6dd4b02 \
             --query 'StandardErrorContent' --output text
 
-          STATUS=$(aws ssm get-command-invocation \
-            --command-id $CMD_ID \
-            --instance-id i-00006eba4f6dd4b02 \
-            --query 'Status' --output text)
-
-          [ "$STATUS" = "Success" ] || { echo "Deploy failed: $STATUS"; exit 1; }
+          # NOW fail the workflow if needed
+          if [ -n "$WAIT_FAILED" ]; then
+            echo "Deploy failed"
+            exit 1
+          fi
