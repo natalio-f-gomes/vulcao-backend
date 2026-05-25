@@ -32,10 +32,6 @@ jobs:
       - name: Build with Maven
         run: mvn -B clean package -DskipTests
 
-      - name: Package deployment bundle
-        run: |
-          ./mwvw clean package -DskipTests
-
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
