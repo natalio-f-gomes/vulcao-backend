@@ -48,46 +48,5 @@ jobs:
           [ -n "$ROLE" ] || { echo "AWS_DEPLOY_ROLE_ARN missing"; exit 1; }
           echo "All required values present"
 
-      - name: Deploy via SSM
-        run: |
-          CMD_ID=$(aws ssm send-command \
-            --region eu-south-2 \
-            --instance-ids i-00006eba4f6dd4b02 \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "set -e",
-              "cd /home/ec2-user/vulcao-backend",
-              "git pull",
-              "./mvnw clean package -DskipTests",
-              "sudo systemctl restart vulcao-backend"
-            ]' \
-            --query 'Command.CommandId' --output text)
-
-          echo "Command ID: $CMD_ID"
-
-          # Wait but don't fail yet
-          aws ssm wait command-executed \
-            --region eu-south-2 \
-            --command-id $CMD_ID \
-            --instance-id i-00006eba4f6dd4b02 || WAIT_FAILED=1
-
-          # ALWAYS print output regardless
-          echo "=== STDOUT ==="
-          aws ssm get-command-invocation \
-            --region eu-south-2 \
-            --command-id $CMD_ID \
-            --instance-id i-00006eba4f6dd4b02 \
-            --query 'StandardOutputContent' --output text
-
-          echo "=== STDERR ==="
-          aws ssm get-command-invocation \
-            --region eu-south-2 \
-            --command-id $CMD_ID \
-            --instance-id i-00006eba4f6dd4b02 \
-            --query 'StandardErrorContent' --output text
-
-          # NOW fail the workflow if needed
-          if [ -n "$WAIT_FAILED" ]; then
-            echo "Deploy failed"
-            exit 1
-          fi
+      - name: Upload JAR to S3
+        run: aws s3 cp target/*.jar s3://${{ secrets.AWS_S3_BUCKET_NAME }}/app.jar
