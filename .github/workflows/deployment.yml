@@ -13,6 +13,8 @@ env:
   AWS_REGION: eu-south-2
   S3_BUCKET: ${{ secrets.S3_BUCKET }}
   S3_KEY: builds/${{ github.sha }}.zip
+  CODEDEPLOY_APP: vulcao-backend           # CodeDeploy application name
+  CODEDEPLOY_GROUP: vulcao-backend-asg     # Deployment group name
 
 jobs:
   deploy:
@@ -22,16 +24,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '21'
           cache: maven
 
       - name: Build with Maven
         run: mvn -B clean package -DskipTests
-
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -39,14 +40,41 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify secrets
-        env:
-          BUCKET: ${{ env.S3_BUCKET }}
-          ROLE: ${{ secrets.AWS_DEPLOY_ARN }}
+      - name: Build deployment bundle
         run: |
-          [ -n "$BUCKET" ] || { echo "S3_BUCKET missing"; exit 1; }
-          [ -n "$ROLE" ] || { echo "AWS_DEPLOY_ROLE_ARN missing"; exit 1; }
-          echo "All required values present"
+          mkdir -p bundle/scripts
+          cp target/*.jar bundle/app.jar
+          cp appspec.yml bundle/appspec.yml
+          cp scripts/*.sh bundle/scripts/
+          # Normalize line endings + ensure executable
+          sed -i 's/\r$//' bundle/scripts/*.sh bundle/appspec.yml
+          chmod +x bundle/scripts/*.sh
+          cd bundle && zip -r ../bundle.zip .
 
-      - name: Upload JAR to S3
-        run: aws s3 cp target/*.jar s3://${{ secrets.S3_BUCKET }}/app.jar
+      - name: Upload bundle to S3
+        run: aws s3 cp bundle.zip s3://${{ env.S3_BUCKET }}/${{ env.S3_KEY }}
+
+      - name: Trigger CodeDeploy
+        run: |
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+            --application-name ${{ env.CODEDEPLOY_APP }} \
+            --deployment-group-name ${{ env.CODEDEPLOY_GROUP }} \
+            --s3-location bucket=${{ env.S3_BUCKET }},key=${{ env.S3_KEY }},bundleType=zip \
+            --description "Deploy ${{ github.sha }}" \
+            --query 'deploymentId' --output text)
+          echo "Deployment ID: $DEPLOYMENT_ID"
+          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_ENV
+
+      - name: Wait for deployment to complete
+        run: |
+          aws deploy wait deployment-successful --deployment-id $DEPLOYMENT_ID || {
+            echo "Deployment failed. Fetching details..."
+            aws deploy get-deployment --deployment-id $DEPLOYMENT_ID \
+              --query 'deploymentInfo.{
+                Status:status,
+                ErrorInfo:errorInformation,
+                Summary:deploymentOverview
+              }'
+            exit 1
+          }
+          echo "Deployment successful"
