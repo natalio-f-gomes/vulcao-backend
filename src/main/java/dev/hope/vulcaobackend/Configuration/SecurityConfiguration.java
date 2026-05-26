@@ -31,17 +31,12 @@ public class SecurityConfiguration {
 
         return httpSecurity
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).ignoringRequestMatchers("/actuator/**"))
+                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).ignoringRequestMatchers("/actuator/**", "/api/v1/public/**","/api/v1/auth/**"))
                 .authenticationProvider(authenticationProvider())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1/auth/employer/login",
-                                "/api/v1/auth/employer/register",
-                                "/api/v1/auth/staff/login",
-                                "/api/v1/auth/staff/register",
-                                "/api/v1/auth/user/register",
-                                "/api/v1/auth/user/login",
+                                "/api/v1/auth/**",
                                 "/api/v1/public/**",
                                 "/api/v1/actuator/**"
                 ).permitAll()
