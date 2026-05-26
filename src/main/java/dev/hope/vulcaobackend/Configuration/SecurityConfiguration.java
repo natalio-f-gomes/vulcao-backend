@@ -41,8 +41,9 @@ public class SecurityConfiguration {
                                 "/api/v1/auth/staff/register",
                                 "/api/v1/auth/user/register",
                                 "/api/v1/auth/user/login",
-                                "/api/v1/public/**"
-                        ).permitAll()
+                                "/api/v1/public/**",
+                        "/actuator/**"
+                ).permitAll()
                         .anyRequest().authenticated()
                 ).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
