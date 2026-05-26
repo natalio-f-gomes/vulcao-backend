@@ -109,12 +109,12 @@ public class UserService {
     }
 
     //EDIT USER CONTACT
-    public void editUserContact(String username, UserContactData updatedUser) throws Exception {
+    public void editUserContact(String userId, UserContactData updatedUser) throws Exception {
         try{
             String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-            UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(
+            UserModel user = userRepository.findById(userId).orElseThrow(
                     ()-> new UsernameNotFoundException("User With username: " + sessionUser + " not found"));
-            if(!user.getUsername().equals(username)){
+            if(!user.getUsername().equals(sessionUser)){
                 throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
             }
             user.setEmail(updatedUser.getEmail());
@@ -127,12 +127,12 @@ public class UserService {
     }
 
     //EDIT USER INFO
-    public void editUserPersonalData(String username, UserFullName updatedUser) throws Exception {
+    public void editUserPersonalData(String userId, UserFullName updatedUser) throws Exception {
         try{
             String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-            UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(
+            UserModel user = userRepository.findById(userId).orElseThrow(
                     ()-> new UsernameNotFoundException("User With username: " + sessionUser + " not found"));
-            if(!user.getUsername().equals(username)){
+            if(!user.getUsername().equals(sessionUser)){
                 throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
             }
             user.setFirstName(updatedUser.getFirstName());
@@ -146,33 +146,30 @@ public class UserService {
     }
 
     //EDIT USER Address
-    public void editUserAddress(String username, Address updatedAddress) throws Exception {
-        try{
-            String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-            UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(
-                    ()-> new UsernameNotFoundException("User With username: " + sessionUser + " not found"));
-            if(!user.getUsername().equals(username)){
-                throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
-            }
-            user.setAddress(updatedAddress);
-            userRepository.update(user);
-        }catch (Exception e){
-            throw new Exception();
+    public void editUserAddress(String userId, Address updatedAddress) throws AccessDeniedException {
+
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        UserModel user = userRepository.findById(userId).orElseThrow(
+                ()-> new UsernameNotFoundException("User With username: " + sessionUser + " not found"));
+        if(!user.getUsername().equals(sessionUser)){
+            throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
+        user.setAddress(updatedAddress);
+        userRepository.update(user);
 
 
     }
 
     //EDIT CREDENTIALS
-    public void editUserCredentials(String username, UserCredentials newCredentials) throws Exception {
+    public void editUserCredentials(String userId, UserCredentials newCredentials) throws Exception {
         try{
             if(newCredentials.getUsername()== null || newCredentials.getPassword() == null){
                 throw new RuntimeException("BOTH USERNAME AND PASSWORD MUST BE FILLED");
             }
             String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-            UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(
+            UserModel user = userRepository.findById(userId).orElseThrow(
                     ()-> new UsernameNotFoundException("User With username: " + sessionUser + " not found"));
-            if(!user.getUsername().equals(username)){
+            if(!user.getUsername().equals(sessionUser)){
                 throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
             }
             user.setUsername(newCredentials.getUsername());

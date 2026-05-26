@@ -16,6 +16,7 @@ import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.Services.CartItemService;
 import dev.hope.vulcaobackend.Services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/user")
 public class UserController {
@@ -50,7 +52,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-
     //Get User profile
     @GetMapping("/get/my-profile")
     public ResponseEntity<?> getCurrentUserProfile() {
@@ -60,33 +61,36 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-
     //Update User profile
-    @PutMapping("/update/{username}/profile")
-    public ResponseEntity<?> updatePersonalInfo(@PathVariable String username, @RequestBody UserFullName updatedUser) throws Exception {
-        userService.editUserPersonalData(username, updatedUser);
+    @PutMapping("/update/{userId}/profile")
+    public ResponseEntity<?> updatePersonalInfo(@PathVariable String userId, @RequestBody UserFullName updatedUser) throws Exception {
+        userService.editUserPersonalData(userId, updatedUser);
         return ResponseEntity.ok().build();
 
     }
 
-    @PutMapping("/update/{username}/address")
-    public ResponseEntity<?> updateUserAddress(@PathVariable String username, @RequestBody Address newAddress) throws Exception {
-
-            userService.editUserAddress(username, newAddress);
+    @PutMapping("/update/{userId}/address")
+    public ResponseEntity<?> updateUserAddress(@PathVariable String userId, @RequestBody Address newAddress) throws AccessDeniedException {
+        try{
+            userService.editUserAddress(userId, newAddress);
             return ResponseEntity.ok().build();
+        }catch (AccessDeniedException e){
+            log.debug("DEBUG: ACCESS DENIED WHEN TRYING TO UPDATE USER ADDRESS");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
     }
 
-    @PutMapping("/update/{username}/credentials")
-    public ResponseEntity<?> updateUserCredentials(@PathVariable String username, UserCredentials newCredentials ) throws Exception {
-        userService.editUserCredentials(username, newCredentials);
+    @PutMapping("/update/{userId}/credentials")
+    public ResponseEntity<?> updateUserCredentials(@PathVariable String userId, UserCredentials newCredentials ) throws Exception {
+        userService.editUserCredentials(userId, newCredentials);
         return ResponseEntity.ok().build();
 
     }
 
-    @PutMapping("/update/{username}/contact")
-    public ResponseEntity<?> updateUserContact(@PathVariable String username, @RequestBody UserContactData updatedUser) throws Exception {
-            userService.editUserContact(username, updatedUser);
+    @PutMapping("/update/{userId}/contact")
+    public ResponseEntity<?> updateUserContact(@PathVariable String userId, @RequestBody UserContactData updatedUser) throws Exception {
+            userService.editUserContact(userId, updatedUser);
             return ResponseEntity.ok().build();
 
     }
