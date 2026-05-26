@@ -24,7 +24,7 @@ public class CORSConfig {
         configuration.setAllowedHeaders(List.of("*"));
         // allows cookies (needed for your HttpOnly refresh token cookie)
         configuration.setAllowCredentials(true);
-
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
         // apply to all routes
