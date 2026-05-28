@@ -71,7 +71,7 @@ public class PublicOfferingsController {
         return ResponseEntity.ok(movieService.findAll());
     }
 
-    @GetMapping("/movie/{id}")
+    @GetMapping("/movie/get/{id}")
     public ResponseEntity<MovieDTO> getMovieById(@PathVariable String id) {
         return ResponseEntity.ok(movieService.findMovieById(id));
     }

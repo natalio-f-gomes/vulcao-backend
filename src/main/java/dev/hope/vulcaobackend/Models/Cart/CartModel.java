@@ -22,9 +22,7 @@ import java.util.List;
 @NoArgsConstructor
 @DynamoDbBean
 public class CartModel extends BaseModelEntities {
-
     private List<CartItemModel> items;
-
 
     @DynamoDbPartitionKey
     @DynamoDbSecondaryPartitionKey(indexNames = "id-index")

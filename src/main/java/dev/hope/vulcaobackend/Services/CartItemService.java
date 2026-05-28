@@ -26,13 +26,23 @@ public class CartItemService {
 
 
     public void addToCart(CartItemModel newItem, HttpServletRequest request, UserModel user){
-
         newItem.setId(globalAccessControl.generateNewIdForCart());
         cartItemRepository.save(newItem);
     }
 
-    public List<CartItemModel> findUserCart(HttpServletRequest request, UserModel user){
+    public void decrementCartItemQuantity(CartItemModel item, Integer quantity){
+        item.setQuantity(item.getQuantity() - quantity);
+        if(item.getQuantity() < 0){
+            throw new RuntimeException("This product cannot be decreased any longer");
+        }
+        if(item.getQuantity() == 0){
+            deleteItemFromCart(item.getItemId());
+        }
+        item.onUpdate();
+        cartItemRepository.update(item);
+    }
 
+    public List<CartItemModel> findUserCart(UserModel user){
         return cartItemRepository.findByCartId(user.getId());
     }
 
@@ -41,7 +51,7 @@ public class CartItemService {
         return cartItemRepository.findByItemId(itemId).orElseThrow(()-> new RuntimeException("There is not Item with this id: "+ itemId));
     }
 
-    public void deleteItemFromCart(String itemId,HttpServletRequest request, UserModel user){
+    public void deleteItemFromCart(String itemId){
         cartItemRepository.deleteById(itemId);
     }
 

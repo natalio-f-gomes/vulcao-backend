@@ -120,6 +120,19 @@ public class UserController {
 
     }
 
+    @PutMapping("/cart/decrement/product/{productId}/{productQuantity}")
+    public ResponseEntity<?> decrementCartItem(@PathVariable String productId, @PathVariable Integer productQuantity,  HttpServletRequest request){
+
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart"));
+        ProductModel product = productRepository.findById(productId).orElseThrow(()-> new RuntimeException("There is no product with this id: "+productId));
+        CartItemModel cartItem = cartItemRepository.findByItemId(productId).orElseThrow(()-> new RuntimeException("This item does not exist in the cart"));
+        cartItemService.decrementCartItemQuantity(cartItem, productQuantity);
+        return ResponseEntity.ok().build();
+
+
+    }
+
     @PutMapping("/cart/update/product/{itemId}/quantity/{quantity}")
     public ResponseEntity<?> updateCartProduct(@PathVariable String itemId,@PathVariable Integer quantity, HttpServletRequest request){
             String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
@@ -143,12 +156,14 @@ public class UserController {
         }
     }
 
-    @GetMapping("/get/cart")
-    public ResponseEntity<List<CartItemModel>> getUserCartItems(HttpServletRequest request){
-
+    @GetMapping("/get/cart/{cartId}")
+    public ResponseEntity<List<CartItemModel>> getUserCartItems(@PathVariable String cartId){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart"));
-        List<CartItemModel> items =  cartItemService.findUserCart(request, user);
+        if(!user.getId().equals(cartId)){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        List<CartItemModel> items =  cartItemService.findUserCart(user);
         System.out.println("Total Items: " + items.size());
         return ResponseEntity.ok(items);
 
@@ -171,7 +186,7 @@ public class UserController {
 
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart"));
-        cartItemService.deleteItemFromCart(itemId, request, user);
+        cartItemService.deleteItemFromCart(itemId);
         return ResponseEntity.ok().build();
 
     }

@@ -73,7 +73,6 @@ public class CartRepository {
     public Optional<CartModel> findById(String cartId) {
         return Optional.ofNullable(
                 cartTable.getItem(Key.builder().partitionValue(cartId).build()));
-
     }
 
 
