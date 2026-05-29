@@ -1,7 +1,10 @@
 package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyAboutInfo;
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyContact;
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
+import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Services.CompanyService;
@@ -56,7 +59,25 @@ public class CompanyController {
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateBusiness(@RequestBody CompanyDTO updatedBusiness, @PathVariable String id){
         companyService.updateCompany(id, updatedBusiness);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PutMapping("/update/address/{id}")
+    public ResponseEntity<?> updateBusinessAddress(@RequestBody Address newAddress, @PathVariable String id){
+        companyService.updateCompanyAddress(id, newAddress);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PutMapping("/update/description/{id}")
+    public ResponseEntity<?> updateBusinessDescription(@RequestBody CompanyAboutInfo info, @PathVariable String id){
+        companyService.updateCompanyAboutInfo(id, info);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PutMapping("/update/contact/{id}")
+    public ResponseEntity<?> updateBusinessContact(@RequestBody CompanyContact newContact, @PathVariable String id){
+        companyService.updateCompanyContact(id, newContact);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
 }

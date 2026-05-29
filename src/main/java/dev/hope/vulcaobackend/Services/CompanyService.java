@@ -1,6 +1,8 @@
 package dev.hope.vulcaobackend.Services;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyAboutInfo;
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyContact;
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import dev.hope.vulcaobackend.Mappers.CompanyMapper;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
@@ -47,7 +49,7 @@ public class CompanyService {
     //    private String creatorUsername;
     public boolean isNameTaxIdAndDescriptionValid(String name, String taxId, String description){
         if(name == null){throw new RuntimeException("Company Name cannot be null");}
-        String NAME_PATTERN = "^[\\p{L}0-9 +_.-]+$";
+        String NAME_PATTERN = "^[\\p{L}0-9 !+_.-]+$";
         String TAX_PATTERN = "^[\\p{L}0-9 +_.-]*$";
         if(!name.matches(NAME_PATTERN)){
             throw new IllegalArgumentException("THE COMPANY NAME "+ name+ " must be from A-Z a-z 0-9 and can use european characters");
@@ -131,9 +133,6 @@ public class CompanyService {
                 isAddressValid(company.getAddress()) && isEmailValid(company.getEmail()) && isCompanyStatusValid(company.getStatus());
     }
 
-
-
-
     public CompanyDTO findCompanyById(String companyID){
         CompanyModel company = companyRepository.findById(companyID)
                 .orElseThrow (()  -> new RuntimeException("Company " + companyID + " not found"));
@@ -204,7 +203,6 @@ public class CompanyService {
                 throw new RuntimeException("The new company name is already taken.");
             }
         }
-
         try {
             company.setName(updatedCompany.getName());
             company.setCategory(updatedCompany.getCategory());
@@ -215,8 +213,45 @@ public class CompanyService {
             company.setEmail(updatedCompany.getEmail());
             company.setAddress(updatedCompany.getAddress());
             company.setStatus(updatedCompany.getStatus());
-            company.onCreate();
-            companyRepository.save(company);
+            company.onUpdate();
+            companyRepository.update(company);
+        }
+        catch(Exception e){
+            System.out.println(e);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot update this company because a different company contains the same email or tax id");
+        }
+    }
+
+    public void updateCompanyAddress(String id, Address newAddress){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
+        isAddressValid(newAddress);
+        try {
+            company.setAddress(newAddress);
+            company.onUpdate();
+            companyRepository.update(company);
+        }
+        catch(Exception e){
+            System.out.println(e);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot update this company because a different company contains the same email or tax id");
+        }
+    }
+
+    public void updateCompanyContact(String id, CompanyContact contact){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
+        isPhoneNumberAndFaxNumberValid(contact.getPhoneNumber(), contact.getFaxNumber() );
+        isEmailValid(contact.getEmail());
+        isNameTaxIdAndDescriptionValid(company.getName(), contact.getTaxIdNumber(), company.getDescription());
+        try {
+            company.setEmail(contact.getEmail());
+            company.setTaxIdNumber(contact.getTaxIdNumber());
+            company.setFaxNumber(contact.getFaxNumber());
+            company.setPhoneNumber(contact.getPhoneNumber());
+            company.onUpdate();
+            companyRepository.update(company);
         }
         catch(Exception e){
             System.out.println(e);
@@ -225,6 +260,16 @@ public class CompanyService {
     }
 
 
+    public void updateCompanyAboutInfo(String id, CompanyAboutInfo info){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
+        isNameTaxIdAndDescriptionValid(company.getName(), company.getTaxIdNumber(), info.getDescription());
+        company.setDescription(info.getDescription());
+        company.setStatus(info.getStatus());
+        company.onUpdate();
+        companyRepository.update(company);
+    }
 
     public boolean doesTheCompanyAlreadyExist(CompanyModel newCompany){
         if(companyRepository.findByName(newCompany.getName()).isPresent()){

@@ -46,7 +46,7 @@ public class CartItemService {
         return cartItemRepository.findByCartId(user.getId());
     }
 
-    public CartItemModel findItemById(String itemId,  HttpServletRequest request, UserModel user){
+    public CartItemModel findItemById(String itemId){
 
         return cartItemRepository.findByItemId(itemId).orElseThrow(()-> new RuntimeException("There is not Item with this id: "+ itemId));
     }

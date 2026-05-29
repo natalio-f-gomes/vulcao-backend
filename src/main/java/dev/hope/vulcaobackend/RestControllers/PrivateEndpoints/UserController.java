@@ -10,6 +10,7 @@ import dev.hope.vulcaobackend.Models.Cart.CartItemModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
 import dev.hope.vulcaobackend.Models.Properties.OfferingType;
+
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -46,8 +46,11 @@ public class UserController {
     private CartItemRepository cartItemRepository;
 
 
+
     @DeleteMapping("/delete/{userID}")
-    public ResponseEntity<?> deleteUserById(@PathVariable String userID) throws AccessDeniedException {
+    public ResponseEntity<?> deleteUserById(@PathVariable String userID, HttpServletRequest request) throws AccessDeniedException {
+
+
         userService.deleteUserById(userID);
         return ResponseEntity.noContent().build();
     }
@@ -55,6 +58,8 @@ public class UserController {
     //Get User profile
     @GetMapping("/get/my-profile")
     public ResponseEntity<?> getCurrentUserProfile() {
+        String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
+        System.out.println("Method called: " + methodName);
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         UserDTO user = userService.findUserProfile(sessionUser);
         System.out.println("USER PROFILE: " + user.getUsername());
@@ -174,7 +179,7 @@ public class UserController {
         try{
             String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
             UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart"));
-            CartItemModel item =  cartItemService.findItemById(itemId, request, user);
+            CartItemModel item =  cartItemService.findItemById(itemId);
             return ResponseEntity.ok(item);
         }catch (RuntimeException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

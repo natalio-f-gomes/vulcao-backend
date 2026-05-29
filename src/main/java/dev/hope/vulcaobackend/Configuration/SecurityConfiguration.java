@@ -1,6 +1,8 @@
 package dev.hope.vulcaobackend.Configuration;
 
 import dev.hope.vulcaobackend.Authentication.JwtCookieFilter;
+
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -45,6 +47,7 @@ public class SecurityConfiguration {
         log.info("CORS: Configured via CorsConfigurationSource");
         log.info("Session: STATELESS");
         log.info("Public paths: /api/v1/auth/**, /api/v1/public/**, /api/v1/actuator/**");
+
 
         return httpSecurity
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -92,6 +95,7 @@ public class SecurityConfiguration {
                         req.getMethod(),
                         req.getRequestURI(),
                         req.getQueryString() != null ? "?" + req.getQueryString() : "");
+
 
                 // Cookies
                 Cookie[] cookies = req.getCookies();

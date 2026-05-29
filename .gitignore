@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+todoLater/
 ### STS ###
 .apt_generated
 .classpath

@@ -1,6 +1,7 @@
 package dev.hope.vulcaobackend.Repositories;
 
 
+import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -8,10 +9,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedGlobalSecondaryIndex;
+import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 
@@ -66,7 +70,29 @@ public class CompanyRepository {
         }
     }
 
-    public void save(CompanyModel newCompany) { companyTable.putItem(newCompany); }
+    public void save(CompanyModel newCompany) {
+        try {
+            companyTable.putItem(r -> r.item(newCompany)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_not_exists(#pid)")
+                            .putExpressionName("#pid", "id")
+                            .build()));
+        } catch (ConditionalCheckFailedException e) {
+            throw new RuntimeException("This Company already exists " + newCompany.getId(), e);
+        }
+    }
+
+    public void update(CompanyModel updatedCompany) {
+        try {
+            companyTable.putItem(PutItemEnhancedRequest.builder(CompanyModel.class)
+                    .item(updatedCompany)
+                    .conditionExpression(Expression.builder()
+                            .expression("attribute_exists(id)").build())
+                    .build());
+        } catch (ConditionalCheckFailedException e) {
+            throw new RuntimeException("This Company does not exists: "+ updatedCompany.getId(), e);
+        }
+    }
 
     public Optional<CompanyModel> findByEmail(String email) {
         return companyTable.index("company-email-index")
