@@ -88,7 +88,6 @@ public class StaffService {
         newStaff.setCreatorFullName(executive.getFullName());
         newStaff.onCreate();
         staffRepository.save(newStaff);
-        companyRepository.save(staffCompany);
     }
 
 
