@@ -55,9 +55,6 @@ public class GlobalAccessControl {
         if(product.getUnitType() == null || product.getCurrency() == null || product.getStock() == null ||product.getStock() <0 )
         {throw new RuntimeException("Product Unit type, currency, and stock cannot be null");}
         if(product.getExpirationDate() == null) {throw new RuntimeException("Product Unit type, currency, and stock cannot be null");}
-        if(product.getProductType().isPerishable() && product.getExpirationDate().isBefore(LocalDate.now())){throw new RuntimeException("The product cannot be expired");}
-        if(product.getProductType().isFrozen() && product.getExpirationDate().isBefore(LocalDate.now())
-                || product.getExpirationDate().getYear() > LocalDate.now().getYear() + 20){throw new RuntimeException("The product cannot be expired");}
         if(product.getCompanyName().isBlank() || product.getCompanyId().isBlank()){throw new RuntimeException("The product MUST BE ASSOCIATED WITHA  COMPANY");}
         isFieldValid(product.getName());
         isFieldValid(product.getDescription());

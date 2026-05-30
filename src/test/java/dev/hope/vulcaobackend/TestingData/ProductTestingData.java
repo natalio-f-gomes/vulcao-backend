@@ -552,7 +552,7 @@ public class ProductTestingData {
                 .put("productType", "FRESH_FRUIT")
                 .put("name", "Overflow Price")
                 .put("description", "Price exceeds 32-bit signed int")
-                .put("pricePerUnit", ProductType.ALMOND_FLOUR)
+                .put("pricePerUnit", ProductType.BABY_INFANT_GEAR)
                 .put("unitType", "PIECE")
                 .put("currency", "AED")
                 .put("stock", 10)

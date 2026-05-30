@@ -152,7 +152,9 @@ public class StaffService {
         staff.setFirstName(updatedStaff.getFirstName());
         staff.setLastName(updatedStaff.getLastName());
         staff.setEmail(updatedStaff.getEmail());
+        staff.setJobTitle(updatedStaff.getJobTitle());
         staff.setAddress(updatedStaff.getAddress());
+        staff.setDepartment(updatedStaff.getDepartment());
         staff.setAssignedPermissions(updatedStaff.getAssignedPermissions());
         if(!updatedStaff.getPassword().isBlank()){
             staff.setPassword(passwordEncoder.encode(updatedStaff.getPassword()));

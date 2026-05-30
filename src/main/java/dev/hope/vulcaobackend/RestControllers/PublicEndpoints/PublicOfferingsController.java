@@ -29,7 +29,7 @@ public class PublicOfferingsController {
         return productService.findAll();
     }
 
-    @GetMapping("/product/company/{companyId}")
+    @GetMapping("/get/product/company/{companyId}")
     public ResponseEntity<List<ProductDTO>> getProductsByCompanyId(@PathVariable String companyId) {
         System.out.println("Get products from company: "+ companyId+ " requested");
         return ResponseEntity.ok(productService.findProductsByCompanyId(companyId));
