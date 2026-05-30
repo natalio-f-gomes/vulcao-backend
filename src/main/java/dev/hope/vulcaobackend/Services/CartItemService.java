@@ -5,15 +5,11 @@ import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.Cart.CartItemModel;
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
-import dev.hope.vulcaobackend.Services.Offerings.GlobalAccessControl;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class CartItemService {

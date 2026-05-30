@@ -15,20 +15,17 @@ import dev.hope.vulcaobackend.Models.Properties.Permissions;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
-import dev.hope.vulcaobackend.Services.Offerings.GlobalAccessControl;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 

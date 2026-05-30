@@ -1,22 +1,13 @@
-package dev.hope.vulcaobackend.Services.Offerings;
+package dev.hope.vulcaobackend.Services;
 
 
-import dev.hope.vulcaobackend.Authentication.IPService;
-import dev.hope.vulcaobackend.Models.AccountEntities.AuthModel;
-import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
-import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
-import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
-import dev.hope.vulcaobackend.Models.Properties.Permissions;
 import dev.hope.vulcaobackend.Repositories.AuthRepository;
 import dev.hope.vulcaobackend.Repositories.Cart.CartRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
-import dev.hope.vulcaobackend.Services.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -40,10 +31,6 @@ public class GlobalAccessControl {
     UserRepository userRepository;
     @Autowired
     private CartRepository cartRepository;
-
-
-
-
 
 
     public static final CharSequence[] SYMBOLS = {

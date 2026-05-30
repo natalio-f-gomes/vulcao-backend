@@ -15,7 +15,7 @@ import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.RestControllers.APIResponse;
 import dev.hope.vulcaobackend.Services.AuthService;
 import dev.hope.vulcaobackend.Services.EmployerService;
-import dev.hope.vulcaobackend.Services.Offerings.GlobalAccessControl;
+import dev.hope.vulcaobackend.Services.GlobalAccessControl;
 import dev.hope.vulcaobackend.Services.StaffService;
 import dev.hope.vulcaobackend.Services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,19 +33,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import software.amazon.awssdk.thirdparty.jackson.core.JsonParser;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/v1/auth")

@@ -13,7 +13,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(true) // https if true, needs to be changed when deployed
                 .path("/")
-                .maxAge(Duration.ofDays(1))
+                .maxAge(Duration.ofHours(12))
                 .sameSite("Strict")
                 .build();
     }
@@ -21,14 +21,10 @@ public class CookieUtil {
     public ResponseCookie clearCookie(){
         return ResponseCookie.from("AUTH_TOKEN", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(0)
                 .build();
     }
-
-
-
-
 
 }

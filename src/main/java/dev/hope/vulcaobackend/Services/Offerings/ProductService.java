@@ -1,36 +1,27 @@
 package dev.hope.vulcaobackend.Services.Offerings;
 
-import dev.hope.vulcaobackend.Authentication.IPService;
-import dev.hope.vulcaobackend.DataTransferObjects.Offerings.BookDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.Offerings.ProductDTO;
 import dev.hope.vulcaobackend.Mappers.OfferingsMapper;
-import dev.hope.vulcaobackend.Models.AccountEntities.AuthModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.CompanyModel;
-import dev.hope.vulcaobackend.Models.Offerings.BookModel;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
 import dev.hope.vulcaobackend.Models.Properties.Permissions;
-import dev.hope.vulcaobackend.Repositories.AuthRepository;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.Offerings.*;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
+import dev.hope.vulcaobackend.Services.GlobalAccessControl;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static java.rmi.server.LogStream.log;
 
 @Slf4j
 @Service

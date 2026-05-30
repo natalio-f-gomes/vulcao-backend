@@ -17,7 +17,7 @@ import static io.jsonwebtoken.Jwts.builder;
 @Service
 public class JWTService {
     private static final String SECRET ="k31db9VMzP40pjA8M0OHIbfY0yRR0smXE8GqsV6wAE9CWn7XU56zd1ySA70IT2u2c/d0oRYw4XmUDOzAoToMBA==";
-    private static final long expirationTime = 1000 * 60 * 60 * 24; // 1day
+    private static final long expirationTime = 1000 * 60 * 60 * 12; // 12 hours
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }

@@ -11,7 +11,6 @@ import dev.hope.vulcaobackend.Models.Cart.CartModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Repositories.Cart.CartRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
-import dev.hope.vulcaobackend.Services.Offerings.GlobalAccessControl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,8 +21,6 @@ import org.springframework.stereotype.Service;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
