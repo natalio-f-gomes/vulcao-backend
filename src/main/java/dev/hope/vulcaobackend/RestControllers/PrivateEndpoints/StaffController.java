@@ -47,14 +47,14 @@ public class StaffController {
 
     //Get Executive profile
     @GetMapping("/get/my-profile")
-    public StaffDTO getCurrentEmployerProfile() {
+    public StaffDTO getCurrentStaffProfile() {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         return staffService.findStaffProfile(sessionUser);
     }
 
 
-    //Update User profile
-    @PutMapping("/update/{staffId}/byEmployer")
+    //Update Staff account
+    @PutMapping("/update/{staffId}")
     public ResponseEntity<?> employerUpdateStaff(@PathVariable String staffId, @RequestBody StaffModel updatedUser, HttpServletRequest request)  {
         try{
             staffService.employerUpdateStaff(staffId, updatedUser, request);
@@ -62,19 +62,19 @@ public class StaffController {
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-
     }
 
-
-    @PutMapping("/update/{username}/address")
-    public ResponseEntity<?> updateStaffAddress(@PathVariable String username, @RequestBody Address newAddress, HttpServletRequest request)  {
+    //Update Staff Address
+    @PutMapping("/update/{staffId}/address")
+    public ResponseEntity<?> updateStaffAddress(@PathVariable String staffId, @RequestBody Address newAddress, HttpServletRequest request)  {
         try{
-            staffService.editStaffAddress(username, newAddress, request);
+            staffService.updateStaffAddress(staffId, newAddress);
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+
 
 
     @PutMapping("/update/{username}/credentials")
@@ -87,10 +87,10 @@ public class StaffController {
         }
     }
 
-    @PutMapping("/update/{username}/contact")
-    public ResponseEntity<?>  updateStaffContact(@PathVariable String username, @RequestBody UserContactData updatedUser, HttpServletRequest request)  {
+    @PutMapping("/update/{staffId}/contact")
+    public ResponseEntity<?>  updateStaffContact(@PathVariable String staffId, @RequestBody UserContactData updatedUser, HttpServletRequest request)  {
         try{
-            staffService.editStaffContact(username, updatedUser, request);
+            staffService.editStaffContact(staffId, updatedUser, request);
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -107,10 +107,10 @@ public class StaffController {
         }
     }
 
-    @PutMapping("/update/{username}/profile")
-    public ResponseEntity<?>  updateStaffProfile(@PathVariable String username, @RequestBody UserFullName profile, HttpServletRequest request) {
+    @PutMapping("/update/{staffId}/profile")
+    public ResponseEntity<?>  updateStaffProfile(@PathVariable String staffId, @RequestBody UserFullName profile, HttpServletRequest request) {
         try{
-            staffService.editStaffProfile(username, profile, request);
+            staffService.editStaffProfile(staffId, profile, request);
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

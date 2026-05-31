@@ -166,6 +166,19 @@ public class StaffService {
         staffRepository.update(staff);
     }
 
+    public void updateStaffAddress(String staffId, Address newAddress) throws AccessDeniedException {
+        String sessionUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        StaffModel staff = staffRepository.findByUsername(sessionUsername)
+                .orElseThrow(()-> new UsernameNotFoundException("Staff with username "+ sessionUsername + " not found"));
+
+        if(!staff.getId().equals(staffId)){
+            throw new AccessDeniedException("You do not have the permissions to do this action.");
+        }
+        staff.setAddress(newAddress);
+        staff.onUpdate();
+        staffRepository.update(staff);
+    }
+
 
     public void employerAssignPermissionsToStaff(String staffID, Set<Permissions> newPermissions, HttpServletRequest request) throws AccessDeniedException {
         System.out.println(newPermissions);
@@ -222,15 +235,12 @@ public class StaffService {
     }
 
     //EDIT STAFF CONTACT
-    public void editStaffContact(String username, UserContactData updatedStaff, HttpServletRequest request) throws AccessDeniedException {
+    public void editStaffContact(String staffId, UserContactData updatedStaff, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!staff.getUsername().equals(username)){
+        if(!staff.getId().equals(staffId)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
-        }
-        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
-            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
         }
         staff.setEmail(updatedStaff.getEmail());
         staff.setPhoneNumber(updatedStaff.getPhoneNumber());
@@ -238,35 +248,17 @@ public class StaffService {
         staffRepository.update(staff);
     }
 
+
     //EDIT StaffDTO INFO
-    public void editStaffProfile(String username, UserFullName updatedUser, HttpServletRequest request) throws AccessDeniedException {
+    public void editStaffProfile(String staffId, UserFullName updatedUser, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!staff.getUsername().equals(username)){
+        if(!staff.getId().equals(staffId)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
-        }
-        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
-            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
         }
         staff.setFirstName(updatedUser.getFirstName());
         staff.setLastName(updatedUser.getLastName());
-        staff.onUpdate();
-        staffRepository.update(staff);
-    }
-
-    //EDIT USER Address
-    public void editStaffAddress(String username, Address updatedAddress, HttpServletRequest request) throws AccessDeniedException {
-        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
-                ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!staff.getUsername().equals(username)){
-            throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
-        }
-        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
-            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
-        }
-        staff.setAddress(updatedAddress);
         staff.onUpdate();
         staffRepository.update(staff);
     }

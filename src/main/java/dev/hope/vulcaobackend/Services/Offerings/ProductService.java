@@ -84,14 +84,14 @@ public class ProductService {
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("THERE IS NO PRODUCT WITH THIS ID"));
         EmployerModel employer = employerRepository.findByUsername(sessionUser)
                 .orElseThrow(() -> new UsernameNotFoundException("Employer not found"));
-        ProductModel productUpdated =  updateProduct(product, updatedProduct);
+        ProductModel productUpdated =  updateProduct(product, updatedProduct, employer.getUsername());
         globalAccessControl.isProductValid(product);
 
         productRepository.update(productUpdated);
 
     }
 
-    public ProductModel updateProduct(ProductModel product, ProductModel updatedProduct){
+    public ProductModel updateProduct(ProductModel product, ProductModel updatedProduct, String username){
         product.setName(updatedProduct.getName());
         product.setProductType(updatedProduct.getProductType());
         product.setExpirationDate(updatedProduct.getExpirationDate());
@@ -100,6 +100,7 @@ public class ProductService {
         product.setDescription(updatedProduct.getDescription());
         product.setCurrency(updatedProduct.getCurrency());
         product.setStock(updatedProduct.getStock());
+        product.setUpdatedBy(username);
         product.onUpdate();
         return product;
     }
@@ -112,7 +113,8 @@ public class ProductService {
         CompanyModel company = companyRepository.findById(updatedProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("THERE IS NO PRODUCT WITH THIS ID"));
         globalAccessControl.isProductValid(product);
-        ProductModel productUpdated =  updateProduct(product, updatedProduct);
+        ProductModel productUpdated =  updateProduct(product, updatedProduct, staff.getUsername());
+
         product.onUpdate();
         productRepository.update(productUpdated);
     }
