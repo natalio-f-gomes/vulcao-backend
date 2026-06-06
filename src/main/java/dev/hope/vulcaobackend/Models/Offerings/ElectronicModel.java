@@ -36,6 +36,7 @@ public class ElectronicModel extends BaseOfferingModel {
     private boolean eSimSupport;
     private ElectronicDeviceType electronicType;
 
+
     @DynamoDbSecondaryPartitionKey(indexNames = "brand-index")
     public String getBrand(){return this.brand;}
 

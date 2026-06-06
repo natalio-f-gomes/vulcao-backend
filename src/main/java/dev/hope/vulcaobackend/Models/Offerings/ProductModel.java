@@ -1,6 +1,7 @@
 package dev.hope.vulcaobackend.Models.Offerings;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.ImageMetadata;
 import dev.hope.vulcaobackend.Models.Common.BaseOfferingModel;
 import dev.hope.vulcaobackend.Models.Properties.ProductType;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -16,6 +17,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -26,6 +28,7 @@ public class ProductModel extends BaseOfferingModel {
     @FutureOrPresent
     private LocalDate expirationDate;
     private ProductType productType;
+
 
 
     public String getSummarization() {

@@ -425,7 +425,6 @@ public class TestStaffRegistration  {
                 .put("password", "Password123");
         Set<Permissions> staffPermissions = new HashSet<>();
         staffPermissions.add(Permissions.ADD_PRODUCT);
-        staffPermissions.add(Permissions.UPDATE_ACCOUNT);
         JSONArray array = new JSONArray();
         for(Permissions p: staffPermissions){
             array.put(p.name());
@@ -454,7 +453,6 @@ public class TestStaffRegistration  {
         String staffCredentialsInfo = new JSONObject().put("username", "new_smith").put("password", "newPassword").toString();
         //@TODO requestHandler.updateStaffCredentials(staffToken, staffCredentialsInfo, "johnsmith", 200, port  );
         /**  Update Staff permissions*/
-        staffPermissions.remove(Permissions.UPDATE_ACCOUNT);
         requestHandler.updateStaffAddress(staffToken, staffAddressInfo, "johnsmith", 403, port  );
         requestHandler.updateStaffProfile(staffToken, "johnsmith", staffProfileInfo, 403, port  );
         requestHandler.updateStaffContact(staffToken, staffContactInfo, "johnsmith", 403, port  );

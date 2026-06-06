@@ -1,19 +1,20 @@
 package dev.hope.vulcaobackend.Models.Common;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.ImageMetadata;
 import dev.hope.vulcaobackend.Models.Properties.Currency;
+import dev.hope.vulcaobackend.Models.Properties.OfferingType;
 import dev.hope.vulcaobackend.Models.Properties.UnitTypes;
 import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Getter
@@ -35,6 +36,12 @@ public abstract class BaseOfferingModel extends BaseModelEntities{
     protected String companyId;
     protected String companyName;
 
+    private List<String> imgS3UrlKeys = new ArrayList<>();
+
+    @NonNull
+    protected OfferingType offeringType = OfferingType.PRODUCT; //Product is the default Value
+
+    private List<ImageMetadata> imagesMetadata;
 
     @DynamoDbSecondaryPartitionKey(indexNames = "company-name-index")
     public String getCompanyName(){return this.companyName;}

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -29,4 +30,5 @@ public class ProductDTO extends BaseModelDTO {
     private String updatedBy;
     private String companyId;
     private String companyName;
+    private List<String> imgS3UrlKeys;
 }

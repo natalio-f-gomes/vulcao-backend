@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -17,7 +18,7 @@ public abstract class BaseModelEntities {
     protected LocalDateTime createdAt;
     protected LocalDateTime updatedAt;
 
-
+    //private List<String> imagesUrl; //Maximum of 5 images per entity
 
 
 }

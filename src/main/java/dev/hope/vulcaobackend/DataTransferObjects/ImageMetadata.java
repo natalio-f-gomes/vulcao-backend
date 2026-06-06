@@ -1,0 +1,19 @@
+package dev.hope.vulcaobackend.DataTransferObjects;
+
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@DynamoDbBean
+public class ImageMetadata {
+    private String name;
+    private Long   byteSize;
+    private String extension;
+}

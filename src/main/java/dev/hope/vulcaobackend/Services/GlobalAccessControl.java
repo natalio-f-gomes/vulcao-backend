@@ -2,11 +2,8 @@ package dev.hope.vulcaobackend.Services;
 
 
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
-import dev.hope.vulcaobackend.Repositories.AuthRepository;
+import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Cart.CartRepository;
-import dev.hope.vulcaobackend.Repositories.EmployerRepository;
-import dev.hope.vulcaobackend.Repositories.StaffRepository;
-import dev.hope.vulcaobackend.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +39,10 @@ public class GlobalAccessControl {
             "++", "--", "+=", "-=", "*=", "/=", "%=",
             "/*", "*/", "//", "/**"
     };
+    @Autowired
+    private TaskRepository taskRepository;
+
+    /** allowed: Unicode letters, digits, space, plus, underscore, period, comma, colon, semicolon, ampersand, percent, slash, parentheses, hyphen*/
     public boolean isFieldValid(String field){
         String VALID_PATTERN = "^[\\p{L}0-9 +_.,:;&%/()-]*$";
         if(!field.matches(VALID_PATTERN)){throw new RuntimeException("Field:{ " + field + " } is not valid. ");}
@@ -58,10 +59,8 @@ public class GlobalAccessControl {
         if(product.getCompanyName().isBlank() || product.getCompanyId().isBlank()){throw new RuntimeException("The product MUST BE ASSOCIATED WITHA  COMPANY");}
         isFieldValid(product.getName());
         isFieldValid(product.getDescription());
-
         log("PRODUCT " + product.getName() + " is Valid");
         return true;
-
     }
 
     public boolean checkIfEntityExistsBeforeRegister(String username, String email) {
@@ -85,6 +84,17 @@ public class GlobalAccessControl {
         }
         return randomId;
     }
+
+    public String generateNewIdForTask() {
+        boolean doesTaskIdExists = true;
+        String randomId = UUID.randomUUID().toString();
+        while (doesTaskIdExists) {
+            doesTaskIdExists = taskRepository.findById(randomId).isPresent();
+            randomId = UUID.randomUUID().toString();
+        }
+        return randomId;
+    }
+
     public String generateNewIdForCart() {
         boolean doesCartIdExists = true;
         String randomId = UUID.randomUUID().toString();

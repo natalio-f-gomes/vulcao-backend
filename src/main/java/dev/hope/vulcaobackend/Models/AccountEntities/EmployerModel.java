@@ -20,5 +20,10 @@ public class EmployerModel extends BaseAccountModel{
 
     private List<String> companiesRegistered = new ArrayList<>();
 
-    private List<StaffModel> staffList = new ArrayList<>();
+    private List<String> staffList = new ArrayList<>();
+
+    private List<String> taskList = new ArrayList<>();
+
+
+
 }

@@ -124,9 +124,7 @@ public class StaffService {
         if(!staffToBeDeleted.getCompanyId().equals(company.getId()) ){
             throw new AccessDeniedException("You do not have permissions to delete this staff");
         }
-        if(!staff.getAssignedPermissions().contains(Permissions.DELETE_COMPANY )){
-            throw new AccessDeniedException("Access Denied: YOU DO NOT HAVE THE PERMISSION TO DELETE THE USER");
-        }
+
 
         staffRepository.deleteStaff(staffToBeDeleted);
             System.out.println("SUCCESS: Staff deleted by employee");
@@ -193,47 +191,6 @@ public class StaffService {
 
 
 
-    public void staffUpdateStaff(String staffID, StaffModel updatedStaff, HttpServletRequest request) throws AccessDeniedException {
-        String sessionUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel staffAuthority = staffRepository.findByUsername(sessionUsername)
-                .orElseThrow(()-> new UsernameNotFoundException("Executive with username "+ sessionUsername + " not found"));
-        if(staffAuthority.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)) {
-
-            StaffModel staff = staffRepository.findById(staffID).orElseThrow(() -> new RuntimeException("staff with id " + staffID + " not found"));
-            if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
-                throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to update Staff");
-            }
-            staff.setUsername(updatedStaff.getUsername());
-            staff.setFirstName(updatedStaff.getFirstName());
-            staff.setLastName(updatedStaff.getLastName());
-            staff.setEmail(updatedStaff.getEmail());
-            staff.setAddress(updatedStaff.getAddress());
-            staff.setAssignedPermissions(updatedStaff.getAssignedPermissions());
-            if (!updatedStaff.getPassword().isBlank()) {
-                staff.setPassword(passwordEncoder.encode(updatedStaff.getPassword()));
-            }
-            staff.setHiredAt(updatedStaff.getHiredAt());
-            staff.setPhoneNumber(updatedStaff.getPhoneNumber());
-            staff.setSalary(updatedStaff.getSalary());
-            staff.onUpdate();
-            staffRepository.save(staff);
-        }
-        throw new AccessDeniedException("This staff does not have the authority to update another staff");
-
-    }
-
-    public void staffUpdateProfile(String staffId, UserFullName updatedStaff, HttpServletRequest request) throws AccessDeniedException{
-        String sessionUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        StaffModel staff = staffRepository.findById(staffId).orElseThrow(()-> new RuntimeException("staff with id "+ staffId + " not found"));
-        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_ACCOUNT)){
-            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
-        }
-        staff.setFirstName(updatedStaff.getFirstName());
-        staff.setLastName(updatedStaff.getLastName());
-        staff.onUpdate();
-        staffRepository.save(staff);
-    }
-
     //EDIT STAFF CONTACT
     public void editStaffContact(String staffId, UserContactData updatedStaff, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
@@ -274,9 +231,7 @@ public class StaffService {
         if(!staff.getUsername().equals(username)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
-        if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_STAFF)){
-            throw new org.springframework.security.access.AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to perform this action");
-        }
+
         staff.setUsername(newCredentials.getUsername());
         staff.setPassword(passwordEncoder.encode(newCredentials.getPassword()));
         staff.onUpdate();

@@ -1,6 +1,7 @@
 package dev.hope.vulcaobackend.Models.Offerings;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.ImageMetadata;
 import dev.hope.vulcaobackend.Models.Common.BaseOfferingModel;
 import dev.hope.vulcaobackend.Models.Properties.BookFormat;
 import dev.hope.vulcaobackend.Models.Properties.Genres;
@@ -41,7 +42,6 @@ public class BookModel extends BaseOfferingModel {
     private List<Languages> languages;
     private LocalDate publicationDate;
     private BookFormat format;
-
 
 
     @DynamoDbSecondaryPartitionKey(indexNames = "book-publisher-index")

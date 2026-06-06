@@ -26,6 +26,7 @@ public class OfferingsMapper {
         productDTO.setDescription(product.getDescription());
         productDTO.setCreatorUsername(product.getCreatorUsername());
         productDTO.setCreatorId(product.getCreatorId());
+        productDTO.setImgS3UrlKeys(product.getImgS3UrlKeys());
         return productDTO;
     }
 

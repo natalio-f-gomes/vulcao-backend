@@ -11,6 +11,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,6 +34,8 @@ public class StaffModel extends BaseAccountModel {
     private String companyName;
     private String department;
     private String jobTitle;
+
+    private List<String> taskList = new ArrayList<>();
 
     private Integer salary;
     private LocalDate hiredAt;

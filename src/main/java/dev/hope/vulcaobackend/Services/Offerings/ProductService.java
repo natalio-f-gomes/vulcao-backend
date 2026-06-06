@@ -1,6 +1,7 @@
 package dev.hope.vulcaobackend.Services.Offerings;
 
 import dev.hope.vulcaobackend.DataTransferObjects.Offerings.ProductDTO;
+import dev.hope.vulcaobackend.DataTransferObjects.UploadImageRequest;
 import dev.hope.vulcaobackend.Mappers.OfferingsMapper;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
@@ -45,7 +46,7 @@ public class ProductService {
         System.out.println("EMPLOYER SAVE PRODUCT SERVICE REACHED "+ newProduct.getName());
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no employer with this name"));
         CompanyModel company = companyRepository.findById(newProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
-        newProduct.setId(UUID.randomUUID().toString());
+
         newProduct.setCompanyName(company.getName());
         newProduct.setCreatorUsername(employer.getUsername());
         newProduct.setCreatorId(employer.getId());
@@ -65,7 +66,7 @@ public class ProductService {
             throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
         }
         CompanyModel company = companyRepository.findById(newProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
-        newProduct.setId(UUID.randomUUID().toString());
+        //newProduct.setId(UUID.randomUUID().toString()); generate id before reaching here
         newProduct.setCompanyName(company.getName());
         newProduct.setCreatorUsername(staff.getUsername());
         newProduct.setCreatorId(staff.getId());
