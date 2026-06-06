@@ -30,7 +30,7 @@ public class S3Config {
     }
 
     /* ---------- PROD: instance profile via IMDS — no keys anywhere ---------- */
-    @Profile("prod")
+    @Profile("!local")
     @Bean
     public AwsCredentialsProvider prodCredentials() {
         return DefaultCredentialsProvider.builder().build();
