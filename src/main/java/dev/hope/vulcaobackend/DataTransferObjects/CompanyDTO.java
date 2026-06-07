@@ -27,7 +27,7 @@ public class CompanyDTO extends BaseModelDTO {
     private String email;
     private Address address;
     private CompanyStatuses status;
-
     private String creatorUsername;
+    private List<String> imgS3UrlKeys;
 
 }

@@ -41,11 +41,11 @@ public class StaffController {
 
 
     @GetMapping("/get/all/{companyId}")
-    public List<StaffDTO> getAllStaff(@PathVariable String companyId){
-        return staffService.findAllStaffs(companyId);
+    public ResponseEntity<?> getAllStaff(@PathVariable String companyId){
+        return ResponseEntity.ok(staffService.findAllStaffs(companyId));
     }
 
-    //Get Executive profile
+    //Get staff profile
     @GetMapping("/get/my-profile")
     public ResponseEntity<?> getCurrentStaffProfile() {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();

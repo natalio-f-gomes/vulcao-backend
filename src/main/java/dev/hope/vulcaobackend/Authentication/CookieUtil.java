@@ -11,7 +11,7 @@ public class CookieUtil {
     public ResponseCookie createCookie(String token){
         return ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)
-                .secure(true) // https if true, needs to be changed when deployed
+                .secure(true)
                 .path("/")
                 .maxAge(Duration.ofHours(12))
                 .sameSite("Strict")

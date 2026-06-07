@@ -1,6 +1,6 @@
 package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
-import dev.hope.vulcaobackend.DataTransferObjects.ConfirmImageUploadRequest;
+import dev.hope.vulcaobackend.DataTransferObjects.OfferingImageUploadRequest;
 import dev.hope.vulcaobackend.DataTransferObjects.UploadImageRequest;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.Offerings.BookModel;
@@ -53,7 +53,7 @@ public class OfferingsController {
 
 
 
-    private static final long MAX_BYTES = 5L * 1024 * 1024; // 10 MB guard
+    public static final long MAX_BYTES = 5L * 1024 * 1024; // 5 MB guard
     @Autowired
     private EmployerRepository employerRepository;
 
@@ -80,7 +80,7 @@ public class OfferingsController {
     }
 
     @PostMapping("/image/upload/confirm")
-    public ResponseEntity<?> confirmImageUpload(@RequestBody ConfirmImageUploadRequest body) {
+    public ResponseEntity<?> confirmImageUpload(@RequestBody OfferingImageUploadRequest body) {
         System.out.println("UPLOAD CONFIRMATION ENDPOINT");
 
         List<String> keys = body.getS3PresignKeys();
@@ -131,8 +131,6 @@ public class OfferingsController {
         addProductImageKeys(body.getOfferingId(), keys);
         System.out.println("Confirmed " + keys.size() + " image(s) for offering "
                 + body.getOfferingId());
-        addProductImageKeys(body.getOfferingId(), keys);
-
         for (String key : keys) {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(BUCKET_NAME).key(key).build());
@@ -142,14 +140,14 @@ public class OfferingsController {
         return ResponseEntity.ok("Saved " + keys.size() + " image(s).");
     }
 
-    // REGISTER PRODUCT
+    // Add PRODUCT
     @PostMapping("/product/employer/add")
     public ResponseEntity<?> employerAddProduct(@RequestBody ProductModel newProduct, HttpServletRequest request){
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String randomId = generateNewIdForOffering(OfferingType.PRODUCT);
         newProduct.setId(randomId);
         productService.employerSaveProduct(newProduct,userSession, request);
-        return uploadRequestService.requestPresignedUrls(newProduct);
+        return uploadRequestService.requestProductPresignedUrls(newProduct);
     }
 
     @PutMapping("/product/update/image")
@@ -157,13 +155,14 @@ public class OfferingsController {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no employer with this name"));
         if(newProduct.getImagesMetadata() == null){return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NO IMAGES ASSOCIATED WITH THIS PRODUCT"); }
-        uploadRequestService.requestPresignedUrls(newProduct);
         for (String key : newProduct.getImgS3UrlKeys()) {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(READ_BUCKET).key(key).build());
             System.out.println("KEY CLEANED UP: "+ key);
         }
-        return ResponseEntity.ok().build();
+        return uploadRequestService.requestProductPresignedUrls(newProduct);
+
+
     }
 
     @PostMapping("/product/staff/add")

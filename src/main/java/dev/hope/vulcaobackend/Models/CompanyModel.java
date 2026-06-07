@@ -1,6 +1,7 @@
 package dev.hope.vulcaobackend.Models;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.ImageMetadata;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.Common.BaseModelEntities;
 import dev.hope.vulcaobackend.Models.Properties.BusinessCategory;
@@ -16,6 +17,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 ;
 
 @Getter
@@ -36,6 +39,10 @@ public class CompanyModel extends BaseModelEntities {
     private Double revenue;
     @NotBlank
     private String email;
+
+    private List<String> imgS3UrlKeys = new ArrayList<>();
+
+    private List<ImageMetadata> imagesMetadata = new ArrayList<>();
 
     private Address address;
     private CompanyStatuses status;

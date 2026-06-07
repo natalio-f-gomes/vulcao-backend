@@ -28,6 +28,7 @@ public class CompanyMapper {
         dto.setUpdatedAt(company.getUpdatedAt());
         dto.setCreatorUsername(company.getCreatorUsername());
         dto.setRevenue(company.getRevenue());
+        dto.setImgS3UrlKeys(company.getImgS3UrlKeys());
         return dto;
 
 

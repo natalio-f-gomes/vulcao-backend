@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConfirmImageUploadRequest {
+public class OfferingImageUploadRequest {
         private String offeringId;
         private OfferingType offeringType;
         private List<String> s3PresignKeys;

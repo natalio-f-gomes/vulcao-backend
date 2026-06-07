@@ -23,6 +23,7 @@ public class CartItemModel extends BaseModelEntities {
     private String cartId;
     private Integer quantity;
     private String itemId;
+    private String companyId;
     private OfferingType itemType;
 
     @DynamoDbPartitionKey
