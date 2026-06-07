@@ -47,9 +47,9 @@ public class StaffController {
 
     //Get Executive profile
     @GetMapping("/get/my-profile")
-    public StaffDTO getCurrentStaffProfile() {
+    public ResponseEntity<?> getCurrentStaffProfile() {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return staffService.findStaffProfile(sessionUser);
+        return ResponseEntity.ok(staffService.findStaffProfile(sessionUser));
     }
 
 
