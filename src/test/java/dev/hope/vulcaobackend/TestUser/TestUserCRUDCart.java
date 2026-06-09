@@ -6,12 +6,11 @@ import dev.hope.vulcaobackend.DataTransferObjects.AccountDTOs.EmployerDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.AccountDTOs.UserDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.Offerings.ProductDTO;
-import dev.hope.vulcaobackend.Models.Cart.CartItemModel;
+import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
 import dev.hope.vulcaobackend.RequestHandler;
 import dev.hope.vulcaobackend.TestingData.LoginTestingData;
 import dev.hope.vulcaobackend.TestingData.ProductTestingData;
 import dev.hope.vulcaobackend.TestingData.RegistrationTestingData;
-import dev.hope.vulcaobackend.VulcaoBackendApplication;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +21,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -115,12 +113,11 @@ public class TestUserCRUDCart {
         assert items.size() == productList1.size();
         /** User Gets cart item by id*/
         for(CartItemModel item: items){
-            CartItemModel found =  requestHandler.getCartItemById(token, item.getItemId(), port);
+            CartItemModel found =  requestHandler.getCartItemById(token, item.getId(), port);
             System.out.println("Quantity before updating: "+ found.getQuantity());
-            System.out.println("ITEM FETCHED BY ID: " + found.getItemId());
+            System.out.println("ITEM FETCHED BY ID: " + found.getId());
             assert found.getItemType() == item.getItemType();
-            assert found.getItemId().equals(item.getItemId());
-            assert found.getCartId().equals(item.getCartId());
+            assert found.getId().equals(item.getId());
             assert Objects.equals(found.getQuantity(), item.getQuantity());
         }
 
@@ -135,26 +132,26 @@ public class TestUserCRUDCart {
 
         //loop through items NOT items2
         for(CartItemModel item: items){
-            CartItemModel found =  requestHandler.getCartItemById(token, item.getItemId(), port);
-            System.out.println("ITEM FETCHED BY ID: " + found.getItemId());
+            CartItemModel found =  requestHandler.getCartItemById(token, item.getId(), port);
+            System.out.println("ITEM FETCHED BY ID: " + found.getId());
             System.out.println("Quantity after updating: "+ found.getQuantity());
             assert found.getItemType() == item.getItemType();
-            assert found.getItemId().equals(item.getItemId());
-            assert found.getCartId().equals(item.getCartId());
+            assert found.getId().equals(item.getId());
+
             assert Objects.equals(found.getQuantity(), item.getQuantity()+1);
         }
 
 
         /** User Deletes all items from the cart*/
         for(CartItemModel item: items){
-            requestHandler.userDeletesItemFromCart(token, item.getItemId(), 200, port);
+            requestHandler.userDeletesItemFromCart(token, item.getId(), 200, port);
         }
         List<CartItemModel> items3  = requestHandler.getUserCart(token, port);
         assert items3.isEmpty();
 
         requestHandler.userLogoutRequest(token, 200, port);
         for(CartItemModel item: items){
-            requestHandler.userDeletesItemFromCart(token, item.getItemId(), 403, port);
+            requestHandler.userDeletesItemFromCart(token, item.getId(), 403, port);
         }
         for(ProductDTO product: productList1){
             requestHandler.userAddItemToCart(token, product.getId(), 1, 403, port);

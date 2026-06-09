@@ -1,6 +1,5 @@
-package dev.hope.vulcaobackend.Models;
+package dev.hope.vulcaobackend.Models.Shopping;
 
-import dev.hope.vulcaobackend.Models.Cart.CartItemModel;
 import dev.hope.vulcaobackend.Models.Common.BaseModelEntities;
 import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import lombok.AllArgsConstructor;

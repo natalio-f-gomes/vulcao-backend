@@ -1,5 +1,6 @@
 package dev.hope.vulcaobackend.Authentication;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
@@ -7,11 +8,17 @@ import java.time.Duration;
 
 @Component
 public class CookieUtil {
+    @Value("${app.cookie.secure:false}")
+    private boolean secure;
+
+    @Value("${app.cookie.same-site:Lax}")
+    private String sameSite;
+
     //This is for all accounts
     public ResponseCookie createCookie(String token){
         return ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(Duration.ofHours(12))
                 .sameSite("Strict")
@@ -21,7 +28,7 @@ public class CookieUtil {
     public ResponseCookie clearCookie(){
         return ResponseCookie.from("AUTH_TOKEN", "")
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(0)
                 .build();

@@ -30,12 +30,9 @@ public class ProductService {
     @Autowired private EmployerRepository employerRepository;
     @Autowired private StaffRepository staffRepository;
 
-    @Autowired private BookRepository bookRepository;
-    @Autowired private TVShowRepository tvShowRepository;
     @Autowired private CompanyRepository companyRepository;
     @Autowired private ProductRepository productRepository;
-    @Autowired private MovieRepository movieRepository;
-    @Autowired private MusicRepository musicRepository;
+
     @Autowired private OfferingsMapper offeringsMapper;
     @Autowired private GlobalAccessControl globalAccessControl;
 
@@ -158,7 +155,7 @@ public class ProductService {
     }
 
     public ProductDTO findProductsById(String id){
-        ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("There is no product with this id"));
+        ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("There is no product with this id: "+ id));
         return offeringsMapper.transformToProductDTO(product);
     }
 

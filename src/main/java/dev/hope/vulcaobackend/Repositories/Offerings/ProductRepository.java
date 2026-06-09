@@ -5,11 +5,9 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.core.pagination.sync.SdkIterable;
 import software.amazon.awssdk.enhanced.dynamodb.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedGlobalSecondaryIndex;
-import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
@@ -57,6 +55,10 @@ public class ProductRepository {
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
                                     .indexName("item-name-index")
+                                    .projection(p -> p.projectionType(ProjectionType.ALL))
+                                    .build(),
+                            EnhancedGlobalSecondaryIndex.builder()
+                                    .indexName("offering-id-index")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build()
                             )
@@ -128,6 +130,7 @@ public class ProductRepository {
         return Optional.ofNullable(
                 productTable.getItem(Key.builder().partitionValue(id).build()));
     }
+
 
     public List<ProductModel> findByCompanyName(String companyName) {
         return productTable.index("company-name-index")

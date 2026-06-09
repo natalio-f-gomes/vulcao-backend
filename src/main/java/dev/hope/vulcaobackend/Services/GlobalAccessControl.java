@@ -3,12 +3,11 @@ package dev.hope.vulcaobackend.Services;
 
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
 import dev.hope.vulcaobackend.Repositories.*;
-import dev.hope.vulcaobackend.Repositories.Cart.CartRepository;
+import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.*;
 
 import static java.rmi.server.LogStream.log;
@@ -26,8 +25,7 @@ public class GlobalAccessControl {
     AuthService authService;
     @Autowired
     UserRepository userRepository;
-    @Autowired
-    private CartRepository cartRepository;
+ 
 
 
     public static final CharSequence[] SYMBOLS = {
@@ -41,6 +39,9 @@ public class GlobalAccessControl {
     };
     @Autowired
     private TaskRepository taskRepository;
+
+    @Autowired
+    private CartItemRepository cartItemRepository;
 
     /** allowed: Unicode letters, digits, space, plus, underscore, period, comma, colon, semicolon, ampersand, percent, slash, parentheses, hyphen*/
     public boolean isFieldValid(String field){
@@ -95,11 +96,11 @@ public class GlobalAccessControl {
         return randomId;
     }
 
-    public String generateNewIdForCart() {
+    public String generateNewIdForCartItem() {
         boolean doesCartIdExists = true;
         String randomId = UUID.randomUUID().toString();
         while (doesCartIdExists) {
-            doesCartIdExists = cartRepository.findById(randomId).isPresent();
+            doesCartIdExists = cartItemRepository.findByItemId(randomId).isPresent();
             randomId = UUID.randomUUID().toString();
         }
         return randomId;
