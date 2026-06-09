@@ -38,6 +38,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -186,7 +187,7 @@ public class AuthController {
 
         if(newStaff.getCompanyId().isBlank()){
             return ResponseEntity.badRequest()
-                    .body(new APIResponse(null, "Company ID is required"));
+                    .body(new APIResponse(null, "Company ID is required",400, LocalDateTime.now()));
         }
         boolean isRequestValid = globalAccessControl.isRequestValid(newStaff.getUsername(), newStaff.getEmail(), newStaff.getPassword(), newStaff.getFirstName(), newStaff.getLastName());
         boolean isUserDataValid = globalAccessControl.isDataValid(newStaff.getUsername(), newStaff.getFirstName(), newStaff.getLastName(), newStaff.getPassword());
@@ -199,12 +200,12 @@ public class AuthController {
 
         if(!globalAccessControl.isRequestValid(newStaff.getUsername(), newStaff.getEmail(), newStaff.getPassword(), newStaff.getFirstName(), newStaff.getLastName())){
             return ResponseEntity.badRequest()
-                    .body(new APIResponse(null, "Invalid input"));
+                    .body(new APIResponse(null, "Invalid input",400, LocalDateTime.now()));
         }
 
         if(globalAccessControl.checkIfEntityExistsBeforeRegister(newStaff.getUsername(), newStaff.getEmail())){
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new APIResponse(null, "User already exists"));
+                    .body(new APIResponse(null, "User already exists", 409, LocalDateTime.now()));
         }
         try {
             String staffId = globalAccessControl.generateNewIdForStaff();
@@ -212,7 +213,7 @@ public class AuthController {
             staffService.registerStaff(newStaff, request);
                         //cartService.createCartOnce(newUser);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new APIResponse("Staff registered successfully", null));
+                    .body(new APIResponse("Staff registered successfully", null, 201, LocalDateTime.now()));
                     } catch (NullPointerException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

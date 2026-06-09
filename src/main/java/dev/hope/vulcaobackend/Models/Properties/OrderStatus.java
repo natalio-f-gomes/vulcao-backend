@@ -1,5 +1,5 @@
 package dev.hope.vulcaobackend.Models.Properties;
 
 public enum OrderStatus {
-    PENDING, PROCESSING, CANCELLED, COMPLETED
+    PENDING, PROCESSING, CANCELLED, COMPLETED, RECEIVED, SENT
 }

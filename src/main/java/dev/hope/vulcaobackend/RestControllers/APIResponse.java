@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -12,4 +15,6 @@ import lombok.Setter;
 public class APIResponse {
     private String message;
     private String error;
+    private Integer status;
+    private LocalDateTime timestamp;
 }

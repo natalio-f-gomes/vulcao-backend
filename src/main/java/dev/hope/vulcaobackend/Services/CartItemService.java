@@ -99,9 +99,9 @@ public class CartItemService {
         return items;
     }
 
-    public void deleteItemFromCart(String itemId){
+    public void deleteItemFromCart(String userId,String companyId, String itemId){
         logger.debug("Entering deleteItemFromCart with itemId: {}", itemId);
-        CartItemModel item = cartItemRepository.findByItemId(itemId).orElseThrow(()-> new RuntimeException("ITEM with id: "+ itemId + " not found"));
+        CartItemModel item = cartItemRepository.findCartItem(userId, companyId, itemId).orElseThrow(()-> new RuntimeException("This item does not exists in the cart: "+ itemId));
         cartItemRepository.delete(item);
         logger.debug("Successfully deleted item from cart: {}", itemId);
     }

@@ -165,30 +165,7 @@ public class UserController {
         return ResponseEntity.ok(newItem);
     }
 
-    @PutMapping("/cart/decrement/product/{companyId}/{productId}/{productQuantity}")
-    public ResponseEntity<?> decrementCartItem(@PathVariable String companyId, @PathVariable String productId, @PathVariable Integer productQuantity, HttpServletRequest request) {
-        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        logger.debug("REST request to decrementCartItem: productId={}, quantity={}, sessionUser={}", productId, productQuantity, sessionUser);
 
-        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(() -> {
-            logger.debug("Access Denied: Session user '{}' not found.", sessionUser);
-            return new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart");
-        });
-
-        ProductModel product = productRepository.findById(productId).orElseThrow(() -> {
-            logger.debug("Decrement failed: Product not found with id: {}", productId);
-            return new RuntimeException("There is no product with this id: " + productId);
-        });
-
-        CartItemModel cartItem = cartItemRepository.findByItemId(productId).orElseThrow(() -> {
-            logger.debug("Decrement failed: Item {} does not exist in cart.", productId);
-            return new RuntimeException("This item does not exist in the cart");
-        });
-
-        cartItemService.decrementCartItemQuantity(cartItem, productQuantity, companyId);
-        logger.debug("Successfully updated decrement instruction for item: {}", productId);
-        return ResponseEntity.ok().build();
-    }
 
 
     @GetMapping("/get/cart/{cartId}/{companyId}")
@@ -232,7 +209,7 @@ public class UserController {
     }
 
     @DeleteMapping("/delete/cart/item/{itemId}/{companyId}")
-    public ResponseEntity<?> deleteCartItemById(@PathVariable String itemId, @PathVariable String companyId) {
+    public ResponseEntity<?> removeItemFromCart(@PathVariable String itemId, @PathVariable String companyId) {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         logger.debug("REST request to deleteCratItemById (typo in mapping retained): itemId={}, sessionUser={}", itemId, sessionUser);
 
@@ -241,7 +218,7 @@ public class UserController {
             return new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart");
         });
 
-        cartItemService.deleteItemFromCart(itemId);
+        cartItemService.deleteItemFromCart(user.getId(), companyId, itemId);
         logger.debug("Successfully removed item {} from database.", itemId);
         return ResponseEntity.ok().build();
     }

@@ -119,10 +119,10 @@ public class CartItemRepository {
                 .items().stream().collect(Collectors.toList());
     }
 
-    public Optional<CartItemModel> findCartItem(String userId, String companyId, String productId) {
+    public Optional<CartItemModel> findCartItem(String userId, String companyId, String itemId) {
         CartItemModel item = cartItemTable.getItem(Key.builder()
                 .partitionValue(userId)
-                .sortValue(companyId + "#" + productId)
+                .sortValue(companyId + "#" + itemId)
                 .build());
         return Optional.ofNullable(item);
     }
