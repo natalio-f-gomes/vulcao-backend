@@ -18,7 +18,5 @@ public abstract class BaseModelEntities {
     protected LocalDateTime createdAt;
     protected LocalDateTime updatedAt;
 
-    //private List<String> imagesUrl; //Maximum of 5 images per entity
-
 
 }

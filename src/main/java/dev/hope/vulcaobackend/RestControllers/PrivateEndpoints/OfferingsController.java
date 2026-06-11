@@ -32,8 +32,6 @@ import static dev.hope.vulcaobackend.Services.ImageUploadRequestService.MAX_IMAG
 @RestController
 public class OfferingsController {
 
-
-
     @Autowired private ProductService productService;
     @Autowired
     private ProductRepository productRepository;

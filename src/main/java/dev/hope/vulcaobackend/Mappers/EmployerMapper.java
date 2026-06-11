@@ -20,7 +20,6 @@ public class EmployerMapper {
                         .username(employer.getUsername())
                         .email(employer.getEmail())
                         .phoneNumber(employer.getPhoneNumber())
-                        .fullName(employer.getFullName())
                         .address(employer.getAddress()).build();
 
     }

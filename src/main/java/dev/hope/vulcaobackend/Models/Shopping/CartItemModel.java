@@ -38,9 +38,7 @@ public class CartItemModel extends BaseModelEntities {
     @DynamoDbSecondaryPartitionKey(indexNames = "user-id-index")
     public String getUserId() { return this.userId; }
 
-    // Composite sort key: "<companyId>#<productId>".
-    // Makes each product a distinct row per user, and lets us fetch all of a
-    // company's items with begins_with("<companyId>#").
+
     @DynamoDbSortKey
     public String getCompanyItem() {
         return this.companyId + "#" + this.id;

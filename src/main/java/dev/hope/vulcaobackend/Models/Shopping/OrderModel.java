@@ -8,6 +8,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,35 +18,45 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderModel extends BaseModelEntities {
-    @NonNull
     private String userId;
 
+    private List<OrderItemModel> orderItems = new ArrayList<>();
+
     @NonNull
-    private List<CartItemModel> items = new ArrayList<>();
+    private List<CartItemModel> cartItems = new ArrayList<>();
 
     private OrderStatus status;
-
     private Double totalCost;
-
     private String trackId;
+
     @NonNull
     private String companyId;
 
     @DynamoDbPartitionKey
-    public String getCompanyId() {return this.companyId;}
+    public String getCompanyId() { return this.companyId; }
 
     @DynamoDbSecondaryPartitionKey(indexNames = "track-id-index")
-    public String getTrackId(){return this.trackId;}
+    public String getTrackId() { return this.trackId; }
 
     @DynamoDbSecondaryPartitionKey(indexNames = "id-index")
-    public String getId(){return this.id;}
+    public String getId() { return this.id; }
 
+    // SORT KEY — unique per order because it ends in the generated order id
     @DynamoDbSortKey
-    public String getCompanyItem() {
-        return this.companyId + "#" + this.userId;
+    public String getOrderKey() {
+        return this.companyId + "#" + this.userId + "$" + this.id;
     }
-    public void setCompanyItem(String companyItem) {
-        // derived from companyId + id on write; nothing to store on read
+    public void setOrderKey(String orderKey) {
+        // no-operation
+    }
+
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
 }

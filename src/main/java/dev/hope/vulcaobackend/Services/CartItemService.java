@@ -41,32 +41,6 @@ public class CartItemService {
         logger.debug("Successfully added item to cart with generated ID: {}", newItem.getId());
     }
 
-    public void decrementCartItemQuantity(CartItemModel item, Integer quantity, String companyId){
-        logger.debug("Entering decrementCartItemQuantity for item: {}, decrement quantity: {}", item != null ? item.getId() : "null", quantity);
-
-        item.setQuantity(item.getQuantity() - quantity);
-        logger.debug("New calculated quantity for item {}: {}", item.getId(), item.getQuantity());
-
-        if(item.getQuantity() < 0){
-            logger.debug("Quantity dropped below 0 for item: {}. Throwing exception.", item.getId());
-            throw new RuntimeException("This product cannot be decreased any longer");
-        }
-        if(item.getQuantity() == 0){
-            logger.debug("Quantity is 0 for item: {}. Triggering deletion.", item.getId());
-            deleteItemFromCart(item.getId());
-        }
-
-        item.onUpdate();
-        cartItemRepository.update(item);
-        logger.debug("Successfully updated item quantity in repository for item: {}", item.getId());
-    }
-
-    public List<CartItemModel> findUserCart(UserModel user){
-        logger.debug("Entering findUserCart for user: {}", user != null ? user.getId() : "null");
-        List<CartItemModel> cart = cartItemRepository.findByCartId(user.getId());
-        logger.debug("Found {} items in cart for user: {}", cart.size(), user.getId());
-        return cart;
-    }
 
     public List<CartItemModel> findUserCartItems(String userId, String companyId){
         List<CartItemModel> cart = cartItemRepository.findCartItems(userId, companyId);

@@ -18,7 +18,7 @@ public class CookieUtil {
     public ResponseCookie createCookie(String token){
         return ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(Duration.ofHours(12))
                 .sameSite("Strict")
@@ -28,7 +28,7 @@ public class CookieUtil {
     public ResponseCookie clearCookie(){
         return ResponseCookie.from("AUTH_TOKEN", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(0)
                 .build();

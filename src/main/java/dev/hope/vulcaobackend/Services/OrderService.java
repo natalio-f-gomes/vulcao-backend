@@ -8,6 +8,7 @@ import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
 import dev.hope.vulcaobackend.Models.Properties.OfferingType;
 import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
+import dev.hope.vulcaobackend.Models.Shopping.OrderItemModel;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
@@ -17,9 +18,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -34,8 +35,12 @@ public class OrderService {
     @Autowired
     private StaffRepository staffRepository;
 
+    @Autowired OrderItemRepository orderItemRepository;
 
-    public boolean validateCartItems(List<CartItemModel> items, CompanyModel company, String userId) {
+
+
+
+    public boolean validateOrderItems(List<CartItemModel> items, CompanyModel company, String userId) {
 
         for (CartItemModel item : items) {
             if (!item.getCompanyId().equals(company.getId())) {
@@ -75,7 +80,44 @@ public class OrderService {
 
     public String generateTrackId(String userId) {
         //user first 4 id chars, 6 random generated numbers
-        return "USER#" + userId.substring(0, 5) + "ORD" + secureRandom.nextInt(100_000) + 900_000;
+        String randomTrackId = "USER-" + userId.substring(0, 4) + "ORD" + secureRandom.nextInt(10_000) + 100_000;
+        boolean found = true;
+        while(found){
+            boolean trackIdExists =  orderRepository.findByTrackId(randomTrackId).isPresent();
+            if(!trackIdExists){found=false;}
+        }
+        return randomTrackId;
+    }
+
+    public String generateOrderId() {
+        String randomId = UUID.randomUUID().toString();
+        boolean found = true;
+        while(found){
+            boolean orderExists =  orderRepository.findById(randomId).isPresent();
+            if(!orderExists){found=false;}
+        }
+        return randomId;
+    }
+
+    public void saveOrderItem(CartItemModel cartItem){
+        String itemName = "";
+        Double price =0.0;
+        switch (cartItem.getItemType()){
+            case PRODUCT: ProductModel product = productRepository.findById(cartItem.getId()).orElseThrow(()-> new RuntimeException("There is not product with this id: "+ cartItem.getId()));
+                itemName = product.getName();
+                price = product.getPricePerUnit();
+                break;
+        }
+        OrderItemModel orderItem = new OrderItemModel();
+        orderItem.setId(cartItem.getId());
+        orderItem.setItemName(itemName);
+        orderItem.setItemType(cartItem.getItemType());
+        orderItem.setQuantity(cartItem.getQuantity());
+        orderItem.setUserId(cartItem.getUserId());
+        orderItem.setCompanyId(cartItem.getCompanyId());
+        orderItem.setPriceAtPurchase(price);
+        orderItem.onCreate();
+        orderItemRepository.save(orderItem);
     }
 
 
@@ -85,14 +127,24 @@ public class OrderService {
             throw new AccessDeniedException("You do not have the permissions to handle this operation");
         }
         CompanyModel company = companyRepository.findById(newOrder.getCompanyId()).orElseThrow(()-> new RuntimeException("Company With ID: "+ newOrder.getCompanyId() + " not found"));
-        validateCartItems(newOrder.getItems(), company, user.getId());
+        validateOrderItems(newOrder.getCartItems(), company, user.getId());
         newOrder.setStatus(OrderStatus.SENT);
-        Double totalCost = calculateOrderCost(newOrder.getItems());
+        Double totalCost = calculateOrderCost(newOrder.getCartItems());
+        newOrder.setId(generateOrderId());
         newOrder.setTotalCost(totalCost);
         newOrder.setTrackId(generateTrackId(user.getId()));
-
+        newOrder.onCreate();
         orderRepository.save(newOrder);
+        for(CartItemModel cartItem: newOrder.getCartItems()){
+            saveOrderItem(cartItem);
+        }
     }
+
+    public Optional<OrderItemModel> findOrderItemById(String itemId){
+        //TODO ADD GUARD RAILS OF WHO IS ALLOWED TO GET THE ITEM
+        return orderItemRepository.findById(itemId);
+    }
+
 
     private boolean validateFindOrder(boolean isStaffPresent,boolean isEmployerPresent, boolean isUserPresent,String sessionUser, String companyId ){
         CompanyModel company = companyRepository.findById(companyId).orElseThrow(()-> new RuntimeException("Ther eis no company with this id: " + companyId));
@@ -121,12 +173,12 @@ public class OrderService {
         return true;
     }
 
-    public OrderModel findOrder(String companyId, String userId, String sessionUser){
+    public OrderModel findOrder(String companyId, String userId, String orderId, String sessionUser){
         boolean isUserPresent = userRepository.findByUsername(sessionUser).isPresent();
         boolean isEmployerPresent = employerRepository.findByUsername(sessionUser).isPresent();
         boolean isStaffPresent = staffRepository.findByUsername(sessionUser).isPresent();
         validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
-        return orderRepository.findOrder(companyId, userId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
+        return orderRepository.findOrder(companyId, userId, orderId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
     }
 
     public OrderModel findOrderByTrackId(String companyId, String sessionUser, String trackId){
@@ -136,4 +188,11 @@ public class OrderService {
         validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
         return orderRepository.findByTrackId(trackId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
     }
+
+    public List<OrderModel> findAllUserOrders(String sessionUser, String userId, String companyId){
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
+        if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
+        return orderRepository.findAllUserOrders(userId, companyId);
+    }
+
 }

@@ -82,7 +82,6 @@ public class StaffService {
         newStaff.setCompanyName(staffCompany.getName());
         newStaff.setPassword(passwordEncoder.encode(newStaff.getPassword()));
         newStaff.setCreatorUsername(sessionUser);
-        newStaff.setCreatorFullName(executive.getFullName());
         newStaff.onCreate();
         staffRepository.save(newStaff);
     }

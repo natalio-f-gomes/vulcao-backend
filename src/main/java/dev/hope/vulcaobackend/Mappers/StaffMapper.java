@@ -20,7 +20,6 @@ public class StaffMapper {
                 .firstName(staff.getFirstName())
                 .lastName(staff.getLastName())
                 .username(staff.getUsername())
-                .fullName(staff.getFullName())
                 .email(staff.getEmail())
                 .phoneNumber(staff.getPhoneNumber())
                 .address(staff.getAddress())

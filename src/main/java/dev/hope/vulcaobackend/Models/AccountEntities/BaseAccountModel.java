@@ -50,10 +50,6 @@ public class BaseAccountModel extends BaseModelEntities {
     @DynamoDbSecondaryPartitionKey(indexNames = "username-index")
     public String getUsername() { return this.username; }
 
-    public String getFullName() {
-        return this.firstName + " " + this.lastName;
-    }
-
     public void onUpdate(){
         this.updatedAt = LocalDateTime.now();
     }
