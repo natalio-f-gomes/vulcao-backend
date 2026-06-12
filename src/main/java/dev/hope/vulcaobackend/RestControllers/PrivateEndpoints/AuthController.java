@@ -115,13 +115,13 @@ public class AuthController {
 
     @PostMapping("/user/logout")
     public ResponseEntity<?> logoutUser(HttpServletResponse response, HttpServletRequest request, Principal principal){
+        if (principal == null) {
+            // still clear the cookie so a half-logged-out client gets cleaned up
+            response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.clearCookie().toString());
+            return ResponseEntity.ok("ALREADY LOGGED OUT");
+        }
         String ip = IPService.getClientIpAddress(request);
         System.out.println("User IP Address "+ ip);
-        try{
-            authService.logoutUser(principal.getName(), ip);
-        }catch (AccessDeniedException e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
 
         response.addHeader(HttpHeaders.SET_COOKIE,cookieUtil.clearCookie().toString());
         SecurityContextHolder.clearContext();

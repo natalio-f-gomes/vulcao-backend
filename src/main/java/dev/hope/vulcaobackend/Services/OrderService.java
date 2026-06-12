@@ -80,7 +80,9 @@ public class OrderService {
 
     public String generateTrackId(String userId) {
         //user first 4 id chars, 6 random generated numbers
-        String randomTrackId = "USER-" + userId.substring(0, 4) + "ORD" + secureRandom.nextInt(10_000) + 100_000;
+        int min = 10_000;
+        int max = 100_000;
+        String randomTrackId = "USER-" + userId.substring(0, 4) + "ORD" + secureRandom.nextInt(min, max);
         boolean found = true;
         while(found){
             boolean trackIdExists =  orderRepository.findByTrackId(randomTrackId).isPresent();
@@ -189,10 +191,18 @@ public class OrderService {
         return orderRepository.findByTrackId(trackId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
     }
 
-    public List<OrderModel> findAllUserOrders(String sessionUser, String userId, String companyId){
+    public List<OrderModel> findAllCompanyOrders(String sessionUser, String userId, String companyId){
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
         if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
-        return orderRepository.findAllUserOrders(userId, companyId);
+        return orderRepository.findAllCompanyOrders(userId, companyId);
     }
+
+
+    public List<OrderModel> findAllUserOrders(String sessionUser, String userId){
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
+        if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
+        return orderRepository.findAllUserOrders(userId);
+    }
+
 
 }

@@ -40,6 +40,10 @@ public class OrderRepository {
                             EnhancedGlobalSecondaryIndex.builder()
                                     .indexName("track-id-index")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
+                                    .build(),
+                            EnhancedGlobalSecondaryIndex.builder()
+                                    .indexName("user-id-index")
+                                    .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build()
                     )
                     .build());
@@ -123,7 +127,7 @@ public class OrderRepository {
      * is what makes multiple orders per (company, user) possible —
      * the old keyEqualTo on the full key could only ever return one item.
      */
-    public List<OrderModel> findAllUserOrders(String userId, String companyId) {
+    public List<OrderModel> findAllCompanyOrders(String userId, String companyId) {
         QueryConditional conditional =
                 QueryConditional.sortBeginsWith(
                         Key.builder()
@@ -135,6 +139,13 @@ public class OrderRepository {
         return orderTable.query(r -> r.queryConditional(conditional))
                 .items()
                 .stream()
+                .toList();
+    }
+
+    public List<OrderModel> findAllUserOrders(String userId) {
+        return orderTable.index("user-id-index")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(userId)))
+                .stream().flatMap(page -> page.items().stream())
                 .toList();
     }
 

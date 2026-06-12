@@ -8,11 +8,6 @@ import java.time.Duration;
 
 @Component
 public class CookieUtil {
-    @Value("${app.cookie.secure:false}")
-    private boolean secure;
-
-    @Value("${app.cookie.same-site:Lax}")
-    private String sameSite;
 
     //This is for all accounts
     public ResponseCookie createCookie(String token){

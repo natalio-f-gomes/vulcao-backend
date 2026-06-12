@@ -38,6 +38,9 @@ public class OrderModel extends BaseModelEntities {
     @DynamoDbSecondaryPartitionKey(indexNames = "track-id-index")
     public String getTrackId() { return this.trackId; }
 
+    @DynamoDbSecondaryPartitionKey(indexNames = "user-id-index")
+    public String getUserId() { return this.userId; }
+
     @DynamoDbSecondaryPartitionKey(indexNames = "id-index")
     public String getId() { return this.id; }
 

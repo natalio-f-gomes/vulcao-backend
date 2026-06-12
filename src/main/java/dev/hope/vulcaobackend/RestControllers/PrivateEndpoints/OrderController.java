@@ -37,15 +37,23 @@ public class OrderController {
     }
 
     @GetMapping("/get/all/{userId}/{companyId}")
-    public ResponseEntity<?> findAllUserOrders(@PathVariable String userId, @PathVariable String companyId){
+    public ResponseEntity<?> findAllCompanyOrders(@PathVariable String userId, @PathVariable String companyId){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return ResponseEntity.ok(orderService.findAllUserOrders(sessionUser, userId, companyId));
+        return ResponseEntity.ok(orderService.findAllCompanyOrders(sessionUser, userId, companyId));
     }
 
     @GetMapping("/get/item/{itemId}")
     public ResponseEntity<?> findOrderItemById(@PathVariable String itemId){
         return ResponseEntity.ok(orderService.findOrderItemById(itemId));
     }
+
+    @GetMapping("/get/all/{userId}")
+    public ResponseEntity<?> findAllUserOrders(@PathVariable String userId){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        return ResponseEntity.ok(orderService.findAllUserOrders(sessionUser, userId));
+    }
+
+
 
     //TODO: UPDATE THE ORDER, DELETE THE ORDER
 
