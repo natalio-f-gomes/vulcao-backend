@@ -63,12 +63,15 @@ public class ProductService {
             throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
         }
         CompanyModel company = companyRepository.findById(newProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
-        //newProduct.setId(UUID.randomUUID().toString()); generate id before reaching here
         newProduct.setCompanyName(company.getName());
         newProduct.setCreatorUsername(staff.getUsername());
         newProduct.setCreatorId(staff.getId());
         newProduct.setCompanyId(company.getId());
         newProduct.onCreate();
+        newProduct.setUpdatedBy(staff.getUsername());
+        System.out.println("DEBUG ID: " + newProduct.getId());
+        System.out.println("DEBUG CREATED_AT: " + newProduct.getCreatedAt());
+        System.out.println("DEBUG UPDATED_AT: " + newProduct.getUpdatedAt());
         globalAccessControl.isProductValid(newProduct);
         productRepository.save(newProduct);
 

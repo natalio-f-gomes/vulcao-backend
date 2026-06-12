@@ -159,8 +159,11 @@ public class OfferingsController {
     @PostMapping("/product/staff/add")
     public ResponseEntity<?> staffAddProduct(@RequestBody ProductModel newProduct, HttpServletRequest request){
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        String randomId = generateNewIdForOffering(OfferingType.PRODUCT);
+        newProduct.setId(randomId);
         productService.staffSaveProduct(newProduct,userSession, request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return uploadRequestService.requestProductPresignedUrls(newProduct);
+
     }
 
     // UPDATE PRODUCT

@@ -90,7 +90,7 @@ public class EmployerService {
         employer.setFirstName(employerName.getFirstName());
         employer.setLastName(employerName.getLastName());
         employer.onUpdate();
-        employerRepository.save(employer);
+        employerRepository.update(employer);
 
     }
 
@@ -98,7 +98,7 @@ public class EmployerService {
         EmployerModel employer = checkEmployerPermissions(username);
         employer.setAddress(address);
         employer.onUpdate();
-        employerRepository.save(employer);
+        employerRepository.update(employer);
     }
 
     public void updateEmployerCredentials(String username, UserCredentials credentials) throws AccessDeniedException {
@@ -109,7 +109,7 @@ public class EmployerService {
         employer.setUsername(credentials.getUsername());
         employer.setPassword(passwordEncoder.encode(credentials.getPassword()));
         employer.onUpdate();
-        employerRepository.save(employer);
+        employerRepository.update(employer);
     }
 
     public void updateEmployerContact(String username, UserContactData contactData) throws AccessDeniedException {
@@ -117,7 +117,7 @@ public class EmployerService {
         employer.setEmail(contactData.getEmail());
         employer.setPhoneNumber(contactData.getPhoneNumber());
         employer.onUpdate();
-        employerRepository.save(employer);
+        employerRepository.update(employer);
     }
 
     public EmployerDTO findEmployerProfile(String sessionUser) {

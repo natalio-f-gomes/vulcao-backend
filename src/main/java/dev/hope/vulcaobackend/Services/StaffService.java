@@ -86,7 +86,6 @@ public class StaffService {
         staffRepository.save(newStaff);
     }
 
-
     public void employerDeleteStaffById(String companyId, String executiveId, String staffID, HttpServletRequest request) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         EmployerModel executive = employerRepository.findById(executiveId)

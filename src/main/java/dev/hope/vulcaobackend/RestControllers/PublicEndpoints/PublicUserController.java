@@ -24,21 +24,12 @@ public class PublicUserController {
     }
 
 
-
-    @GetMapping("/get/{username}")
-    public UserDTO getByUsername(@PathVariable String username) {
-        return userService.findUserByUsername(username);
-    }
-
     @GetMapping("/get/{id}")
     public UserDTO getById(@PathVariable String id) {
        return userService.findUserById(id);
     }
 
-    @GetMapping("/get/{email}")
-    public UserDTO getByEmail(@PathVariable String email) {
-        return userService.findUserByEmail(email);
-    }
+
 
 
    

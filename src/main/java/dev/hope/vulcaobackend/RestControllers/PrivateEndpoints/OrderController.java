@@ -1,5 +1,6 @@
 package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
+import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.OrderRepository;
 import dev.hope.vulcaobackend.Services.OrderService;
@@ -37,9 +38,9 @@ public class OrderController {
     }
 
     @GetMapping("/get/all/{userId}/{companyId}")
-    public ResponseEntity<?> findAllCompanyOrders(@PathVariable String userId, @PathVariable String companyId){
+    public ResponseEntity<?> findAllCompanyAndUserOrders(@PathVariable String userId, @PathVariable String companyId){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return ResponseEntity.ok(orderService.findAllCompanyOrders(sessionUser, userId, companyId));
+        return ResponseEntity.ok(orderService.findAllCompanyAndUserOrders(sessionUser, userId, companyId));
     }
 
     @GetMapping("/get/item/{itemId}")
@@ -53,8 +54,17 @@ public class OrderController {
         return ResponseEntity.ok(orderService.findAllUserOrders(sessionUser, userId));
     }
 
+    @PutMapping("/update/{orderId}/status")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable String orderId,
+            @RequestParam OrderStatus status) {
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+
+        return ResponseEntity.ok(orderService.updateStatus(orderId, status, sessionUser));
+    }
 
 
-    //TODO: UPDATE THE ORDER, DELETE THE ORDER
+
+    //TODO: DELETE THE ORDER
 
 }

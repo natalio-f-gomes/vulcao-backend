@@ -1,6 +1,8 @@
 package dev.hope.vulcaobackend.Models.AccountEntities;
 
 
+import dev.hope.vulcaobackend.DataTransferObjects.AccountDTOs.StaffDTO;
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,11 +20,9 @@ import java.util.List;
 public class EmployerModel extends BaseAccountModel{
 
 
-    private List<String> companiesRegistered = new ArrayList<>();
+    private List<CompanyDTO> companiesRegistered = new ArrayList<>();
 
-    private List<String> staffList = new ArrayList<>();
-
-    private List<String> taskList = new ArrayList<>();
+    private List<String> taskList = new ArrayList<>(); // Feature to be implemented later on
 
 
 

@@ -1,6 +1,5 @@
 package dev.hope.vulcaobackend.Services;
 
-
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyAboutInfo;
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyContact;
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
@@ -30,14 +29,8 @@ public class CompanyService {
     @Autowired private EmployerRepository employerRepository;
     @Autowired
     private CompanyMapper companyMapper;
-    @Autowired
-    private AuthService authService;
-    @Autowired
-    private GlobalAccessControl globalAccessControl;
 
-
-    // VALIDATION
-
+    //    VALIDATION
     //    private String type;
     //    private Double revenue;
     //    private CompanyStatuses status;
@@ -289,13 +282,12 @@ public class CompanyService {
         newBusiness.onCreate();
         try{
             companyRepository.save(newBusiness);
-            creator.getCompaniesRegistered().add(newBusiness.getId());
+            creator.getCompaniesRegistered().add(companyMapper.transformData(newBusiness));
             employerRepository.update(creator);
         }catch (Exception e){
             System.out.println("Exception when trying to register the compay "+e);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A company with the same email or Tax Id already exists");
         }
-
 
     }
 

@@ -1,59 +1,36 @@
 package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
 
-import dev.hope.vulcaobackend.Authentication.CookieUtil;
-import dev.hope.vulcaobackend.Authentication.JWTService;
-import dev.hope.vulcaobackend.DataTransferObjects.AccountDTOs.EmployerDTO;
-import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.UserContactData;
 import dev.hope.vulcaobackend.DataTransferObjects.UserCredentials;
 import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Models.Common.Address;
-import dev.hope.vulcaobackend.Repositories.EmployerRepository;
-import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.Services.EmployerService;
-import dev.hope.vulcaobackend.Services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
 import java.nio.file.AccessDeniedException;
-import java.util.List;
 import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/v1/employer")
 public class EmployerController {
 
-    @Autowired
-    private UserService userService;
     @Autowired private EmployerService employerService;
-    @Autowired private AuthenticationManager authenticationManager;
-    @Autowired private JWTService jwtService;
-    @Autowired private CookieUtil cookieUtil;
-    @Autowired private EmployerRepository employerRepository;
-    @Autowired private UserRepository userRepository;
 
     @GetMapping("/company/get/all")
-    public List<CompanyDTO> getAllEmployerCompanies(){
+    public ResponseEntity<?> getAllEmployerCompanies(){
         String executiveUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return employerService.listMyCompanies(executiveUsername);
-    }
-
-    @GetMapping("/get/all")
-    public List<EmployerDTO> getAllEmployers(){
-        String executiveUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return employerService.findAllEmployers();
+        return ResponseEntity.ok(employerService.listMyCompanies(executiveUsername));
     }
 
     //Get Executive profile
     @GetMapping("/get/my-profile")
-    public EmployerDTO getCurrentEmployerProfile() {
+    public ResponseEntity<?> getCurrentEmployerProfile() {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return employerService.findEmployerProfile(sessionUser);
+        return ResponseEntity.ok( employerService.findEmployerProfile(sessionUser));
     }
 
 
@@ -98,5 +75,7 @@ public class EmployerController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+
+
 
 }

@@ -1,6 +1,7 @@
 package dev.hope.vulcaobackend.Repositories;
 
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
+import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
@@ -127,7 +128,7 @@ public class OrderRepository {
      * is what makes multiple orders per (company, user) possible —
      * the old keyEqualTo on the full key could only ever return one item.
      */
-    public List<OrderModel> findAllCompanyOrders(String userId, String companyId) {
+    public List<OrderModel> findAllCompanyAndUserOrders(String userId, String companyId) {
         QueryConditional conditional =
                 QueryConditional.sortBeginsWith(
                         Key.builder()
@@ -151,5 +152,28 @@ public class OrderRepository {
 
     public void delete(OrderModel order) {
         orderTable.deleteItem(order);
+    }
+
+    //DynamoDbTable<Employee> table =
+    //        enhancedClient.table("employees", TableSchema.fromBean(Employee.class));
+    //
+    //Key key = Key.builder()
+    //        .partitionValue(companyId)
+    //        .build();
+    //
+    //QueryConditional queryConditional =
+    //        QueryConditional.keyEqualTo(key);
+    //
+    //List<Employee> employees = table.query(queryConditional)
+    //        .stream()
+    //        .flatMap(page -> page.items().stream())
+    //        .toList();
+
+    public List<OrderModel> findAllCompanyOrders(String companyId){
+        Key key = Key.builder().partitionValue(companyId).build();
+        System.out.println("findAllCompanyOrders key: " + key);
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(key);
+        System.out.println("findAllCompanyOrders query: " + queryConditional);
+        return orderTable.query(queryConditional).stream().flatMap(page -> page.items().stream()).toList();
     }
 }

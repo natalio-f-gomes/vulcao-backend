@@ -1,5 +1,6 @@
 package dev.hope.vulcaobackend.Services;
 
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.TaskDTO;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
@@ -21,6 +22,7 @@ import java.util.Objects;
 
 @Service
 public class TaskService {
+    // TO BE IMPLEMENTED LATER ON, THE EMPLOYER CAN ASSIGN  MULTIPLE TASKS TO THEIR STAFF
     @Autowired private TaskRepository taskRepository;
     @Autowired private StaffRepository staffRepository;
     @Autowired private EmployerRepository employerRepository;
@@ -45,9 +47,9 @@ public class TaskService {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is not staff with this username: " + sessionUser));
         TaskModel task = taskRepository.findById(taskId).orElseThrow(()-> new RuntimeException("There is no task with this id: "+ taskId));
-        List<String> companies = employer.getCompaniesRegistered();
-        for(String companyId: companies){
-            CompanyModel company = companyRepository.findById(companyId).orElseThrow(()-> new RuntimeException("THIS COMPANY DOES NOT EXIST IN EMPLOYER: "+ employer.getUsername() + " company list"));
+        List<CompanyDTO> companiesRegistered = employer.getCompaniesRegistered();
+        for(CompanyDTO biz: companiesRegistered){
+            CompanyModel company = companyRepository.findById(biz.getId()).orElseThrow(()-> new RuntimeException("THIS COMPANY DOES NOT EXIST IN EMPLOYER: "+ employer.getUsername() + " company list"));
             if(company.getId().equals(task.getCompanyId())){
                 taskRepository.deleteTask(task);
                 return;
@@ -65,9 +67,9 @@ public class TaskService {
             throw new AccessDeniedException("Access denied trying to create a task");
         }
         CompanyModel company = companyRepository.findById(task.getCompanyId()).orElseThrow(()-> new RuntimeException("THIS TASK COMPANY ID DOES NOT EXIST"));
-        List<String> companyIds = employer.getCompaniesRegistered();
-        for(String companyId: companyIds){
-            if(companyId.equals(company.getId())){
+        List<CompanyDTO> companiesRegistered = employer.getCompaniesRegistered();
+        for(CompanyDTO biz: companiesRegistered){
+            if(biz.getId() .equals(company.getId())){
                 globalAccessControl.isFieldValid(task.getTitle());
                 globalAccessControl.isFieldValid(task.getDescription());
                 task.setId(globalAccessControl.generateNewIdForTask());
@@ -105,9 +107,9 @@ public class TaskService {
         if(!staff.getCompanyId().equals(task.getCompanyId())){
             throw new AccessDeniedException("STAFF: "+ staff.getUsername() + " does not work in this company");
         }
-        List<String> companyIds = employer.getCompaniesRegistered();
-        for(String companyId: companyIds){
-            if(companyId.equals(task.getCompanyId())){
+        List<CompanyDTO> companiesRegistered = employer.getCompaniesRegistered();
+        for(CompanyDTO biz: companiesRegistered){
+            if(biz.getId().equals(task.getCompanyId())){
                 //task.setAssigneeId(staffId);
                 taskRepository.update(task);
                 return;

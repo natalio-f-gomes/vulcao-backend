@@ -17,6 +17,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
+@DynamoDbBean // since I am creating a list of staff dto in employer model, i need this annotation
 public class StaffDTO extends BaseAccountDTO {
 
     private String creatorUsername;

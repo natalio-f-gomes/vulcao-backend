@@ -1,5 +1,7 @@
 package dev.hope.vulcaobackend.Services;
 
+import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
+import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
@@ -13,11 +15,13 @@ import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -101,7 +105,7 @@ public class OrderService {
         return randomId;
     }
 
-    public void saveOrderItem(CartItemModel cartItem){
+    public void saveOrderItem(CartItemModel cartItem, OrderModel order){
         String itemName = "";
         Double price =0.0;
         switch (cartItem.getItemType()){
@@ -110,6 +114,7 @@ public class OrderService {
                 price = product.getPricePerUnit();
                 break;
         }
+        List<OrderItemModel> orderItems = new ArrayList<>();
         OrderItemModel orderItem = new OrderItemModel();
         orderItem.setId(cartItem.getId());
         orderItem.setItemName(itemName);
@@ -120,6 +125,9 @@ public class OrderService {
         orderItem.setPriceAtPurchase(price);
         orderItem.onCreate();
         orderItemRepository.save(orderItem);
+        orderItems.add(orderItem);
+        order.setOrderItems(orderItems);
+        orderRepository.update(order);
     }
 
 
@@ -138,8 +146,9 @@ public class OrderService {
         newOrder.onCreate();
         orderRepository.save(newOrder);
         for(CartItemModel cartItem: newOrder.getCartItems()){
-            saveOrderItem(cartItem);
+            saveOrderItem(cartItem, newOrder);
         }
+
     }
 
     public Optional<OrderItemModel> findOrderItemById(String itemId){
@@ -157,9 +166,9 @@ public class OrderService {
 
         if(isEmployerPresent){
             EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Employer with username: "+ sessionUser + " not found"));
-            List<String> companyIds =  employer.getCompaniesRegistered();
-            for (String id : companyIds) {
-                if (id.equals(company.getId())) {
+            List<CompanyDTO> companiesRegistered =  employer.getCompaniesRegistered();
+            for (CompanyDTO biz : companiesRegistered) {
+                if (biz.getId().equals(company.getId())) {
                     found = true;
                     break;
                 }
@@ -191,11 +200,47 @@ public class OrderService {
         return orderRepository.findByTrackId(trackId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
     }
 
-    public List<OrderModel> findAllCompanyOrders(String sessionUser, String userId, String companyId){
+    public List<OrderModel> findAllCompanyAndUserOrders(String sessionUser, String userId, String companyId){
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
         if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
-        return orderRepository.findAllCompanyOrders(userId, companyId);
+        return orderRepository.findAllCompanyAndUserOrders(userId, companyId);
     }
+
+    public List<OrderModel> staffFindCompanyOrders(String sessionUser, String companyId){
+        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("THERE IS NO STAFF WITH THIS USERNAME: "+ sessionUser));
+        if(!staff.getCompanyId().equals(companyId)){
+            throw new AccessDeniedException("THIS STAFF "+ staff.getUsername() + " does not have access to view this company data");
+        }
+        return orderRepository.findAllCompanyOrders(companyId);
+    }
+
+    public List<OrderModel> employerFindCompanyOrders(String sessionUser, String companyId){
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("THERE IS NO EMPLOYER WITH THIS USERNAME: "+ sessionUser));
+        List<CompanyDTO> companies = employer.getCompaniesRegistered();
+        for(CompanyDTO company: companies){
+            if(company.getId().equals(companyId)){
+                return orderRepository.findAllCompanyOrders(companyId);
+            }
+        }
+        throw new AccessDeniedException("THE EMPLOYER: " + sessionUser + " does not have access to view this company: " + companyId);
+
+    }
+
+
+    public List<OrderModel> findAllCompanyOrders(String sessionUser, String companyId){
+        boolean doesStaffExists = staffRepository.findByUsername(sessionUser).isPresent();
+        boolean doesEmployerExists = employerRepository.findByUsername(sessionUser).isPresent();
+        if(!doesEmployerExists && !doesStaffExists){
+            throw new AccessDeniedException("YOU DO NOT HAVE THE PERMISSIONS TO ACCESS THIS DATA.");
+        }
+        if(doesStaffExists){
+            return staffFindCompanyOrders(sessionUser, companyId);
+        }
+        return employerFindCompanyOrders(sessionUser, companyId);
+
+    }
+
+
 
 
     public List<OrderModel> findAllUserOrders(String sessionUser, String userId){
@@ -204,5 +249,46 @@ public class OrderService {
         return orderRepository.findAllUserOrders(userId);
     }
 
+    public OrderModel employerUpdateOrder(String username, OrderModel order, OrderStatus status){
+        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Employer with this name does not exist: " + username));
+        List<CompanyDTO> companies = employer.getCompaniesRegistered();
+        for(CompanyDTO company: companies){
+            if(company.getId().equals(order.getCompanyId())){
+                order.setStatus(status);
+                orderRepository.update(order);
+                return order;
+            }
+        }
+        throw new AccessDeniedException("THIS EMPLOYER DOES NOT OWN  THE COMPANY: " + order.getCompanyId());
+    }
 
+    public OrderModel staffUpdateOrder(String username, OrderModel order, OrderStatus status){
+        StaffModel staff = staffRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Employer with this name does not exist: " + username));
+        if(staff.getCompanyId().equals(order.getCompanyId())){
+        order.setStatus(status);
+        orderRepository.update(order);
+            return order;
+        }
+        throw new AccessDeniedException("THIS STAFF DOES NOT WORK FOR THE COMPAMY: " + order.getCompanyId());
+
+    }
+
+    public OrderModel updateStatus(String orderId, OrderStatus status, String sessionUser) {
+        OrderModel order = orderRepository.findById(orderId).orElseThrow(()-> new RuntimeException("ORDER NOT FOUND"));
+        UserModel user = userRepository.findById(order.getUserId()).orElseThrow(()-> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
+
+        boolean employerLoggedIn = employerRepository.findByUsername(sessionUser).isPresent();
+
+        boolean staffLoggedIn = staffRepository.findByUsername(sessionUser).isPresent();
+
+        if(!staffLoggedIn && !employerLoggedIn){
+            throw new AccessDeniedException("NEITHER Staff or employer are logged in");
+        } if(staffLoggedIn){
+            return staffUpdateOrder(sessionUser, order, status );
+
+        }
+        return employerUpdateOrder(sessionUser, order, status );
+
+
+    }
 }

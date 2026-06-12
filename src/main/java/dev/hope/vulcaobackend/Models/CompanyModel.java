@@ -6,6 +6,7 @@ import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.Common.BaseModelEntities;
 import dev.hope.vulcaobackend.Models.Properties.BusinessCategory;
 import dev.hope.vulcaobackend.Models.Properties.CompanyStatuses;
+import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,8 @@ public class CompanyModel extends BaseModelEntities {
     private List<String> imgS3UrlKeys = new ArrayList<>();
 
     private List<ImageMetadata> imagesMetadata = new ArrayList<>();
+
+    private List<OrderModel> orderList = new ArrayList<>();
 
     private Address address;
     private CompanyStatuses status;

@@ -28,6 +28,7 @@ public class OrderModel extends BaseModelEntities {
     private OrderStatus status;
     private Double totalCost;
     private String trackId;
+    private String note;
 
     @NonNull
     private String companyId;

@@ -6,10 +6,14 @@ import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
+import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
+import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
+import dev.hope.vulcaobackend.Repositories.OrderRepository;
 import dev.hope.vulcaobackend.Services.CompanyService;
 import dev.hope.vulcaobackend.Services.ImageUploadRequestService;
+import dev.hope.vulcaobackend.Services.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +51,10 @@ public class CompanyController {
     private final String READ_BUCKET = "vulcao-app-images";
     @Autowired
     private EmployerRepository employerRepository;
+    @Autowired
+    private OrderService orderService;
+    @Autowired
+    private OrderRepository orderRepository;
 
     public String generateNewIdForCompany() {
         boolean doesUserIdExists = true;
@@ -184,6 +192,16 @@ public class CompanyController {
     public ResponseEntity<?> updateBusinessContact(@RequestBody CompanyContact newContact, @PathVariable String id){
         companyService.updateCompanyContact(id, newContact);
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @GetMapping("/get/all/orders/{companyId}")
+    public ResponseEntity<?> findAllCompanyAndOrders( @PathVariable String companyId){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        List<OrderModel> orders = orderService.findAllCompanyOrders(sessionUser, companyId);
+        for(OrderModel order: orders){
+            orderRepository.update(order);
+        }
+        return ResponseEntity.ok(orders);
     }
 
 }
