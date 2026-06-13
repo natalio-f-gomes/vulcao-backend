@@ -6,6 +6,11 @@ import dev.hope.vulcaobackend.Authentication.CookieUtil;
 import dev.hope.vulcaobackend.Authentication.IPService;
 import dev.hope.vulcaobackend.Authentication.JWTService;
 import dev.hope.vulcaobackend.Authentication.LoginRequest;
+import dev.hope.vulcaobackend.Configuration.AWSSESConfig;
+import dev.hope.vulcaobackend.Configuration.Mail.MailService;
+import dev.hope.vulcaobackend.Configuration.Mail.UserRegistrationListener;
+import dev.hope.vulcaobackend.Configuration.SSMParameterStore.ParameterStoreService;
+import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
@@ -13,14 +18,13 @@ import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.RestControllers.APIResponse;
-import dev.hope.vulcaobackend.Services.AuthService;
-import dev.hope.vulcaobackend.Services.EmployerService;
-import dev.hope.vulcaobackend.Services.GlobalAccessControl;
-import dev.hope.vulcaobackend.Services.StaffService;
-import dev.hope.vulcaobackend.Services.UserService;
+import dev.hope.vulcaobackend.Services.*;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,10 +33,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.services.sesv2.SesV2Client;
+import software.amazon.awssdk.services.sesv2.model.*;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -63,13 +67,21 @@ public class AuthController {
     @Autowired
     GlobalAccessControl globalAccessControl;
 
+    @Autowired private MFAService mfaService;
+
+    AWSSESConfig sesService;
 
 
-    @PostMapping("/user/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserModel newUser) {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonNode = mapper.valueToTree(newUser);
-        System.out.println("JSON NODE USERNAME: " + jsonNode.get("username"));
+    public AuthController(AwsCredentialsProvider localCredentials) {
+        this.sesService = new AWSSESConfig(localCredentials);
+    }
+
+    @PostMapping("/user/register/confirm/{mfaCode}")
+    public ResponseEntity<?> confirmMFA(@RequestBody UserModel newUser, @PathVariable String mfaCode){
+        ResponseEntity<?> response =  mfaService.confirmMFA(newUser.getEmail(), mfaCode);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return response;
+        }
 
         boolean isRequestValid = globalAccessControl.isRequestValid(newUser.getUsername(), newUser.getEmail(), newUser.getPassword(), newUser.getFirstName(), newUser.getLastName());
         boolean isUserDataValid = globalAccessControl.isDataValid(newUser.getUsername(), newUser.getFirstName(), newUser.getLastName(), newUser.getPassword());
@@ -79,9 +91,9 @@ public class AuthController {
         if (!isRequestValid || !isUserDataValid) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        boolean response = globalAccessControl.checkIfEntityExistsBeforeRegister(newUser.getUsername(), newUser.getEmail());
+        boolean entityExists = globalAccessControl.checkIfEntityExistsBeforeRegister(newUser.getUsername(), newUser.getEmail());
         System.out.println("User EXISTS Response: "+ response);
-        if (response) {
+        if (entityExists) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
@@ -93,13 +105,57 @@ public class AuthController {
         } catch (NullPointerException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
+
     }
 
 
-    @PostMapping("/user/login")
-    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
+
+    @PostMapping("/user/register/request/{userEmail}/{username}")
+    public ResponseEntity<?> registerUserRequest(@PathVariable String userEmail, @PathVariable String username) {
+        authService.validateUsername(username);
+        authService.validateEmail(userEmail);
+
+        boolean userEmailExists = userRepository.findByEmail(userEmail).isPresent();
+        boolean usernameExists = userRepository.findByUsername(username).isPresent();
+        if(userEmailExists && usernameExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
+        }
+        if(userEmailExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This Email is already taken");
+        }
+        if(usernameExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This username is already taken");
+        }
+        String randomCode =mfaService.save(userEmail);
+        sesService.sendCode(userEmail, randomCode);
+        return ResponseEntity.status(HttpStatus.CONTINUE).build();
+    }
+
+    @PostMapping("/user/login/request/{username}")
+    public ResponseEntity<?> userLoginRequest( @PathVariable String username) {
+        authService.validateUsername(username);
+        boolean usernameExists = userRepository.findByUsername(username).isPresent();
+        if(!usernameExists){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
+        }
+        UserModel user = userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("This user does not exist"));
+        String randomCode = mfaService.save(user.getEmail());
+        sesService.sendCode(user.getEmail(), randomCode);
+        return ResponseEntity.status(HttpStatus.CONTINUE).build();
+    }
+
+
+
+    @PostMapping("/user/login/confirm/{mfaCode}")
+    public ResponseEntity<?> loginUserConfirm(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         authService.validateUsername(loginRequest.username());
         UserModel user = userRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("USER WITH THIS USERNAME WAS NOT FOUND "+ loginRequest.username()));
+
+        ResponseEntity<?> responseMFA =  mfaService.confirmMFA(user.getEmail(), mfaCode);
+        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return responseMFA;
+        }
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password())
@@ -128,8 +184,13 @@ public class AuthController {
         return ResponseEntity.ok("LOGGED OUT SUCCESSFULLY");
     }
 
-    @PostMapping("/employer/register")
-    public ResponseEntity<?> registerEmployer(@RequestBody EmployerModel newEmployer){
+    @PostMapping("/employer/confirm/register/{mfaCode}")
+    public ResponseEntity<?> registerEmployerConfirm(@PathVariable String mfaCode, @RequestBody EmployerModel newEmployer){
+        ResponseEntity<?> response =  mfaService.confirmMFA(newEmployer.getEmail(), mfaCode);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return response;
+        }
+
         boolean isRequestValid = globalAccessControl.isRequestValid(newEmployer.getUsername(), newEmployer.getEmail(), newEmployer.getPassword(), newEmployer.getFirstName(), newEmployer.getLastName());
         boolean isUserDataValid = globalAccessControl.isDataValid(newEmployer.getUsername(), newEmployer.getFirstName(), newEmployer.getLastName(), newEmployer.getPassword());
         authService.validateEmail(newEmployer.getEmail());
@@ -153,11 +214,47 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/employer/login")
-    public ResponseEntity<?> loginEmployer(@RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
-        authService.validateUsername(loginRequest.username());
-        EmployerModel employer = employerRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("THIS EMPLOYER DOES NOT EXIST"));
+    @PostMapping("/employer/request/register/{email}/{username}")
+    public ResponseEntity<?> registerEmployerRequest(@PathVariable String email, @PathVariable String username) {
+        boolean employerEmailExists = employerRepository.findByEmail(email).isPresent();
+        boolean usernameExists = employerRepository.findByUsername(username).isPresent();
+        if(employerEmailExists && usernameExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
+        }
+        if(employerEmailExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This Email is already taken");
+        }
+        if(usernameExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This username is already taken");
+        }
+        String randomCode = mfaService.save(email);
+        sesService.sendCode(email, randomCode);
+        return ResponseEntity.status(HttpStatus.CONTINUE).build();
+    }
 
+    @PostMapping("/employer/request/login/{username}")
+    public ResponseEntity<?> employerLoginRequest( @PathVariable String username) {
+        authService.validateUsername(username);
+        boolean usernameExists = employerRepository.findByUsername(username).isPresent();
+        if(!usernameExists){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
+        }
+        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("This user does not exist"));
+        String randomCode = mfaService.save(employer.getEmail());
+        sesService.sendCode(employer.getEmail(), randomCode);
+        return ResponseEntity.status(HttpStatus.CONTINUE).build();
+    }
+
+
+    @PostMapping("/employer/confirm/login/{mfaCode}")
+    public ResponseEntity<?> loginEmployerConfirm(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
+        authService.validateUsername(loginRequest.username());
+        EmployerModel employer = employerRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("EMPLOYER WITH THIS USERNAME WAS NOT FOUND "+ loginRequest.username()));
+
+        ResponseEntity<?> responseMFA =  mfaService.confirmMFA(employer.getEmail(), mfaCode);
+        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return responseMFA;
+        }
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password())
@@ -220,10 +317,31 @@ public class AuthController {
 
     }
 
-    @PostMapping("/staff/login")
-    public ResponseEntity<?> loginStaff(@RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
+    @PostMapping("/staff/request/login/{username}")
+    public ResponseEntity<?> staffLoginRequest( @PathVariable String username) {
+        authService.validateUsername(username);
+        boolean usernameExists = staffRepository.findByUsername(username).isPresent();
+        if(!usernameExists){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
+        }
+        StaffModel staff = staffRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("This user does not exist"));
+        String randomCode = mfaService.save(staff.getEmail());
+        sesService.sendCode(staff.getEmail(), randomCode);
+        return ResponseEntity.status(HttpStatus.CONTINUE).build();
+    }
+
+
+    @PostMapping("/staff/confirm/login/{mfaCode}")
+    public ResponseEntity<?> ConfirmStaffLogin(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
         authService.validateUsername(loginRequest.username());
         StaffModel staff = staffRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("THIS Staff DOES NOT EXIST"));
+
+        ResponseEntity<?> responseMFA =  mfaService.confirmMFA(staff.getEmail(), mfaCode);
+        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return responseMFA;
+        }
+        authService.validateUsername(loginRequest.username());
+
         try{
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password())
@@ -235,8 +353,9 @@ public class AuthController {
         System.out.println("ROLE: "+ role);
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
-        return ResponseEntity.ok("Employer Logged In");
+        return ResponseEntity.ok("Staff Logged In");
     }
+
 
     @PostMapping("/staff/logout")
     public ResponseEntity<?> logoutStaff(HttpServletResponse response,HttpServletRequest request, Principal principal) throws AccessDeniedException {

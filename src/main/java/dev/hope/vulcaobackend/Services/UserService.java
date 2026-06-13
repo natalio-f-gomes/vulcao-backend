@@ -8,6 +8,7 @@ import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Mappers.UserMapper;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
+import dev.hope.vulcaobackend.Repositories.MfaRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ public class UserService {
     private GlobalAccessControl globalAccessControl;
 
 
+
     public void save(UserModel newUser){
         if(newUser == null){
             log.warn("save() called with a null UserModel");
@@ -44,6 +46,7 @@ public class UserService {
         newUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
         try{
             newUser.onCreate();
+
             userRepository.save(newUser);
             log.info("save() -> user persisted successfully, username={}, id={}", newUser.getUsername(), newUser.getId());
         }

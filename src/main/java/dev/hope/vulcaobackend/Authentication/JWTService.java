@@ -1,13 +1,16 @@
 package dev.hope.vulcaobackend.Authentication;
 
 
+import dev.hope.vulcaobackend.Configuration.SSMParameterStore.ParameterStoreService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -16,10 +19,23 @@ import static io.jsonwebtoken.Jwts.builder;
 
 @Service
 public class JWTService {
-    private static final String SECRET ="k31db9VMzP40pjA8M0OHIbfY0yRR0smXE8GqsV6wAE9CWn7XU56zd1ySA70IT2u2c/d0oRYw4XmUDOzAoToMBA==";
+
+
+
+    private final String secret;
+    private final SecretKey signingKey;
+
+    @Autowired
+    public JWTService(ParameterStoreService parameterStoreService){
+        this.secret = parameterStoreService.getParameter("/vulcao/jwt/secret");
+        this.signingKey = Keys.hmacShaKeyFor(this.secret.getBytes(StandardCharsets.UTF_8));
+    }
+
     private static final long expirationTime = 1000 * 60 * 60 * 12; // 12 hours
+
+
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes());
+        return this.signingKey;
     }
 
     public String generateJWTToken(String username,String role){
@@ -43,7 +59,7 @@ public class JWTService {
     public boolean isTokenValid(String token){
         try{
             Jwts.parser()
-                    .verifyWith(Keys.hmacShaKeyFor(SECRET.getBytes()))
+                    .verifyWith(Keys.hmacShaKeyFor(secret.getBytes()))
                     .build()
                     .parseSignedClaims(token);
             return true;

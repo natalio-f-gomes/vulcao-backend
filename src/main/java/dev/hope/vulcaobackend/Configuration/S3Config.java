@@ -19,22 +19,6 @@ public class S3Config {
     @Value("${aws.s3.region}")
     private String region;
 
-    /* ---------- LOCAL: static keys from secrets.properties ---------- */
-    @Profile("local")
-    @Bean
-    public AwsCredentialsProvider localCredentials(
-            @Value("${aws.s3.access-key}") String accessKey,
-            @Value("${aws.s3.secret-key}") String secretKey) {
-        return StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey));
-    }
-
-    /* ---------- PROD: instance profile via IMDS — no keys anywhere ---------- */
-    @Profile("!local")
-    @Bean
-    public AwsCredentialsProvider prodCredentials() {
-        return DefaultCredentialsProvider.builder().build();
-    }
 
     @Bean
     public S3Presigner s3Presigner(AwsCredentialsProvider creds) {
