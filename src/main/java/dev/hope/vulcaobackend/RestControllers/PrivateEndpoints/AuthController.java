@@ -16,7 +16,6 @@ import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.RestControllers.APIResponse;
 import dev.hope.vulcaobackend.Services.*;
-import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.server.PathParam;
