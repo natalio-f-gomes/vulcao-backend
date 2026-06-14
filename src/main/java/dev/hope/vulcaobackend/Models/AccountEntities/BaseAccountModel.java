@@ -10,13 +10,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+
 
 import java.time.LocalDateTime;
-import java.util.List;
+
 
 
 @Getter
@@ -27,7 +26,7 @@ public class BaseAccountModel extends BaseModelEntities {
     private String firstName;
     private String lastName;
 
-    @Size(min = 7, max = 20)
+    @Size(min = 8, max = 20)
     private String username;
 
     @Email

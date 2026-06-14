@@ -1,7 +1,6 @@
 package dev.hope.vulcaobackend.Repositories;
 
 
-import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -53,10 +52,6 @@ public class CompanyRepository {
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
                                     .indexName("company-email-index")
-                                    .projection(p -> p.projectionType(ProjectionType.ALL))
-                                    .build(),
-                            EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("company-taxId-index")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
@@ -112,14 +107,6 @@ public class CompanyRepository {
 
     public Optional<CompanyModel> findById(String id) {
         return companyTable.index("company-id-index")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(id)))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .findFirst();
-    }
-
-    public Optional<CompanyModel> findByTaxId(String id) {
-        return companyTable.index("company-taxId-index")
                 .query(QueryConditional.keyEqualTo(k -> k.partitionValue(id)))
                 .stream()
                 .flatMap(page -> page.items().stream())

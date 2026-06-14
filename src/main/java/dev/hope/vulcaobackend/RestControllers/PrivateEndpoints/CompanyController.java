@@ -5,8 +5,6 @@ import dev.hope.vulcaobackend.DataTransferObjects.*;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.CompanyModel;
-import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
-import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
@@ -14,7 +12,6 @@ import dev.hope.vulcaobackend.Repositories.OrderRepository;
 import dev.hope.vulcaobackend.Services.CompanyService;
 import dev.hope.vulcaobackend.Services.ImageUploadRequestService;
 import dev.hope.vulcaobackend.Services.OrderService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -154,11 +151,11 @@ public class CompanyController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerBusiness(@Valid @RequestBody CompanyModel newBusiness, HttpServletRequest request){
+    public ResponseEntity<?> registerBusiness(@Valid @RequestBody CompanyModel newBusiness){
         try{
             String id = generateNewIdForCompany();
             newBusiness.setId(id);
-            companyService.registerBusiness(newBusiness,request);
+            companyService.registerBusiness(newBusiness);
             imageUploadRequestService.requestCompanyPresignedUrlsFor(newBusiness);
             return imageUploadRequestService.requestCompanyPresignedUrlsFor(newBusiness);
         }catch (AccessDeniedException e){

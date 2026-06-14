@@ -4,23 +4,15 @@ package dev.hope.vulcaobackend.Services;
 import dev.hope.vulcaobackend.Models.AccountEntities.AuthModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
-import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Repositories.AuthRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
-import dev.hope.vulcaobackend.Repositories.UserRepository;
-import jakarta.servlet.http.Cookie;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
-import java.util.IllegalFormatPrecisionException;
 import java.util.List;
 
 @Service
@@ -28,61 +20,15 @@ public class AuthService {
 
     @Autowired
     AuthRepository authRepository;
-    @Autowired
-    private UserRepository userRepository;
+
     @Autowired
     private EmployerRepository employerRepository;
     @Autowired
     private StaffRepository staffRepository;
 
-    public void loginUser(UserModel user, String userIpAddress, String accessToken){
-        AuthModel userLoginData = new AuthModel();
-        userLoginData.setAccessToken(accessToken);
-        userLoginData.setIpAddress(userIpAddress);
-        userLoginData.setEmail(user.getEmail());
-        userLoginData.setUsername(user.getUsername());
-        userLoginData.setIssuedAt(LocalDateTime.now());
-        authRepository.save(userLoginData);
-    }
 
-    public void logoutUser(String username, String userIpAddress) throws AccessDeniedException {
-        UserModel userLoggedIn = userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Username "+ username + " not found"));
-        List<AuthModel> isUserLoggedInByUsername = authRepository.findByUsername(username);
-        List<AuthModel> userIpAddresses = authRepository.findByUserIpAddress(userIpAddress);
-        if(isUserLoggedInByUsername.isEmpty() || userIpAddresses.isEmpty() ){throw new AccessDeniedException("You do not appear to be logged in");}
-        boolean valid = doesTheIpAddressMatch(userIpAddresses, userIpAddress);
-        if(!valid){throw new AccessDeniedException("You do not appear to be logged in");}
-        authRepository.deleteUserLoginData(username);
-    }
-    public boolean canUserPerformAction(UserModel userLoggedIn, String ipAddress, Cookie[] cookies) throws AccessDeniedException {
-        System.out.println("DEBUG: Username: " + userLoggedIn.getUsername());
-        System.out.println("DEBUG: IP Address: " + ipAddress);
-        System.out.println("DEBUG: Access token: " + cookies[0].getValue());
-        List<AuthModel> loginData =  authRepository.findByUsername(userLoggedIn.getUsername());
-        System.out.println("Is login data empty: "+loginData.isEmpty());
-        for(AuthModel login: loginData){
-            System.out.println("AUTH MODEL: IpAddress "+ login.getIpAddress() + " Token "+  cookies[0].getValue());
-            if(login.getIpAddress().equals(ipAddress) && login.getAccessToken().equals(cookies[0].getValue())){
-                return true;
-            }
-        }
-        throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO DO THIS ACTION");
-    }
 
-    public boolean canEmployerPerformAction(UserModel userLoggedIn, String ipAddress, Cookie[] cookies) throws AccessDeniedException {
-        System.out.println("DEBUG: Username: " + userLoggedIn.getUsername());
-        System.out.println("DEBUG: IP Address: " + ipAddress);
-        System.out.println("DEBUG: Access token: " + cookies[0].getValue());
-        List<AuthModel> loginData =  authRepository.findByUsername(userLoggedIn.getUsername());
-        System.out.println("Is login data empty: "+loginData.isEmpty());
-        for(AuthModel login: loginData){
-            System.out.println("AUTH MODEL: IpAddress "+ login.getIpAddress() + " Token "+  cookies[0].getValue());
-            if(login.getIpAddress().equals(ipAddress) && login.getAccessToken().equals(cookies[0].getValue())){
-                return true;
-            }
-        }
-        throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO DO THIS ACTION");
-    }
+
 
 
     public boolean doesTheIpAddressMatch(List<AuthModel> entityLoggedInIpAddresses, String userIpAddress){
@@ -94,16 +40,6 @@ public class AuthService {
             }
         }
         return valid;
-    }
-
-    public void loginEmployer(EmployerModel employerLoggedIn, String userIpAddress, String accessToken){
-        AuthModel userLoginData = new AuthModel();
-        userLoginData.setAccessToken(accessToken);
-        userLoginData.setIpAddress(userIpAddress);
-        userLoginData.setUsername(employerLoggedIn.getUsername());
-        userLoginData.setEmail(employerLoggedIn.getEmail());
-        userLoginData.setIssuedAt(LocalDateTime.now());
-        authRepository.save(userLoginData);
     }
 
     public void logoutEmployer(String username, String userIpAddress){
@@ -195,31 +131,22 @@ public class AuthService {
     }
 
 
-    public boolean isValidUsername(String s) {
-        if (s == null || s.length() < 8 || s.length() > 50) return false;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            boolean ok = (c >= 'a' && c <= 'z')
-                    || (c >= 'A' && c <= 'Z')
-                    || (c >= '0' && c <= '9')
-                    || c == '_' || c == '.' || c == '-';
-            if (!ok) return false;
-        }
-        return true;
-    }
+
 
     public void validateUsername(String username) {
+        System.out.println("Username validation check: "+ username);
+        System.out.println("Length: " + username.length());
         if (username == null) {
             throw new IllegalArgumentException("Username cannot be null");
         }
-        if(!isValidUsername(username)){
+        if(username.length() < 8 || username.length() > 50){
             throw new RuntimeException("Username must be between 8 and 50 characters long");
         }
 
         // Normalize first so equivalent forms compare equal
         String normalized = java.text.Normalizer.normalize(username, java.text.Normalizer.Form.NFKC);
-
-        if (!normalized.matches("[A-Za-z0-9_.-]+")) {
+        String NAME_PATTERN = "^[a-zA-Z0-9._-]+$";
+        if (!normalized.matches(NAME_PATTERN)) {
             throw new IllegalArgumentException("Username may only contain letters, digits, underscore, dot, and hyphen");
         }
 

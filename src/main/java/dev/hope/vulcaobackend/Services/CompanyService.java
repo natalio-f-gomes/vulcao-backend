@@ -10,7 +10,6 @@ import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Properties.CompanyStatuses;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,33 +36,48 @@ public class CompanyService {
 
     //    private String creatorUsername;
     public boolean isNameTaxIdAndDescriptionValid(String name, String taxId, String description){
-        if(name == null){throw new RuntimeException("Company Name cannot be null");}
+        if(name == null || name.isEmpty()){throw new RuntimeException("Company Name cannot be null");}
         String NAME_PATTERN = "^[\\p{L}0-9 !+_.-]+$";
-        String TAX_PATTERN = "^[\\p{L}0-9 +_.-]*$";
+        String TAX_ID_FORMAT = "^\\d{9}$";
+        if(name.length() > 500){
+            throw new IllegalArgumentException("The company name cannot be over 500 characters long");
+        }
         if(!name.matches(NAME_PATTERN)){
             throw new IllegalArgumentException("THE COMPANY NAME "+ name+ " must be from A-Z a-z 0-9 and can use european characters");
         }
-        if(!taxId.matches(TAX_PATTERN)){
-            throw new IllegalArgumentException("THE COMPANY TAX ID "+ taxId+ " must be from A-Z a-z 0-9 and can use european characters");
+        if(description.length() > 5000){
+            throw new IllegalArgumentException("THE COMPANY description cannot be over 5000 characters long ");
         }
-        if(!description.matches(NAME_PATTERN)){
+        if(!description.matches(NAME_PATTERN) || description.isEmpty()){
             throw new IllegalArgumentException("THE COMPANY DESCRIPTION "+ description+ " must be from A-Z a-z 0-9 and can use european characters");
+        }
+        if (taxId != null && !taxId.isEmpty() && !taxId.matches(TAX_ID_FORMAT)) {
+            throw new RuntimeException("COMPANY TAX ID DOES NOT MATCH A VALID FORMAT");
         }
         return true;
     }
-    public void isTypeValid(){}
-    public boolean isPhoneNumberAndFaxNumberValid(String phoneNumber, String faxNumber) {
-        if (phoneNumber == null) {throw new IllegalArgumentException("COMPANY PHONE NUMBER CANNOT BE NULL");}
-        String FORMAT = "^[+]?[0-9\\- ]{7,15}$";
-        if(!phoneNumber.matches(FORMAT)){throw new RuntimeException("COMPANY PHONE NUMBER DOES NOT MATCH A VALID PHONE NUMBER ");}
-        if(!faxNumber.matches(FORMAT)){throw new RuntimeException("COMPANY FAX  NUMBER DOES NOT MATCH A VALID FAX NUMBER");}
-        return true;
 
+    public boolean isPhoneNumberAndFaxNumberValid(String phoneNumber, String faxNumber) {
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            throw new IllegalArgumentException("COMPANY PHONE NUMBER CANNOT BE NULL");
+        }
+        String CV_PHONE_FORMAT = "^[0-9\\- ]{7,15}$";
+        if (!phoneNumber.matches(CV_PHONE_FORMAT)) {
+            throw new RuntimeException("COMPANY PHONE NUMBER DOES NOT MATCH A VALID CAPE VERDE PHONE NUMBER");
+        }
+        String TAX_ID_FORMAT = "^\\d{9}$";
+        if(faxNumber.isBlank()){
+            return true;
+        }
+        if (!faxNumber.matches(TAX_ID_FORMAT)) {
+            throw new RuntimeException("COMPANY FAX NUMBER DOES NOT MATCH A VALID FAX NUMBER");
+        }
+        return true;
     }
 
 
     public boolean isEmailValid(String email){
-            if(email == null) { throw  new RuntimeException("Email cannot be null");}
+            if(email == null || email.isEmpty()) { throw  new RuntimeException("Email cannot be null");}
             if(email.length()< 5 || email.length() > 50) {throw new IllegalArgumentException("Email must be over 5 characters long");}
             for (int i = 0; i < email.length(); i++) {
                 int cp = email.codePointAt(i);
@@ -141,10 +155,6 @@ public class CompanyService {
     }
 
 
-    public CompanyDTO findCompanyByTaxIdNumber(String taxIdNumber){
-        CompanyModel company = companyRepository.findByTaxId(taxIdNumber).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"BUSINESS WITH THIS ID NOT FOUND"));
-        return companyMapper.transformData(company);
-    }
 
     public List<CompanyDTO> findCompanyByCreatorUsername(String creator){
         return companyRepository.findByCreatorUsername(creator).stream().map(companyMapper::transformData).collect(Collectors.toList());
@@ -267,7 +277,7 @@ public class CompanyService {
         return false;
     }
 
-    public void registerBusiness(CompanyModel newBusiness, HttpServletRequest request) throws AccessDeniedException {
+    public void registerBusiness(CompanyModel newBusiness) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         System.out.println("DEBUG: ATTEMPT TO REGISTER A COMPANY: Session User " + sessionUser);
         doesTheCompanyAlreadyExist(newBusiness);

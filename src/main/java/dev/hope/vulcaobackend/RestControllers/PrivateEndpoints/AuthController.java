@@ -7,7 +7,6 @@ import dev.hope.vulcaobackend.Authentication.IPService;
 import dev.hope.vulcaobackend.Authentication.JWTService;
 import dev.hope.vulcaobackend.Authentication.LoginRequest;
 import dev.hope.vulcaobackend.Configuration.AWSSESConfig;
-import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
@@ -18,9 +17,7 @@ import dev.hope.vulcaobackend.RestControllers.APIResponse;
 import dev.hope.vulcaobackend.Services.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +28,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.services.sesv2.SesV2Client;
 import software.amazon.awssdk.services.sesv2.model.*;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
@@ -72,8 +66,31 @@ public class AuthController {
         this.sesService = new AWSSESConfig(localCredentials);
     }
 
+
+
+    @PostMapping("/user/register/request/{userEmail}/{username}")
+    public ResponseEntity<?> registerUserRequest(@PathVariable String userEmail, @PathVariable String username) {
+        authService.validateUsername(username);
+        authService.validateEmail(userEmail);
+
+        boolean userEmailExists = userRepository.findByEmail(userEmail).isPresent();
+        boolean usernameExists = userRepository.findByUsername(username).isPresent();
+        if(userEmailExists && usernameExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
+        }
+        if(userEmailExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This Email is already taken");
+        }
+        if(usernameExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("This username is already taken");
+        }
+        String randomCode =mfaService.save(userEmail);
+        sesService.sendCode(userEmail, randomCode);
+        return ResponseEntity.status(HttpStatus.CONTINUE).build();
+    }
+
     @PostMapping("/user/register/confirm/{mfaCode}")
-    public ResponseEntity<?> confirmMFA(@RequestBody UserModel newUser, @PathVariable String mfaCode){
+    public ResponseEntity<?> confirmMFA(@PathVariable String mfaCode, @RequestBody UserModel newUser){
         ResponseEntity<?> response =  mfaService.confirmMFA(newUser.getEmail(), mfaCode);
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.OK)){
             return response;
@@ -81,8 +98,8 @@ public class AuthController {
 
         boolean isRequestValid = globalAccessControl.isRequestValid(newUser.getUsername(), newUser.getEmail(), newUser.getPassword(), newUser.getFirstName(), newUser.getLastName());
         boolean isUserDataValid = globalAccessControl.isDataValid(newUser.getUsername(), newUser.getFirstName(), newUser.getLastName(), newUser.getPassword());
-        authService.validateEmail(newUser.getEmail().toString());
-        authService.validateUsername(newUser.getUsername().toString());
+        authService.validateEmail(newUser.getEmail());
+        authService.validateUsername(newUser.getUsername());
         System.out.println("THE USER DATA IS VALID? : " + isUserDataValid);
         if (!isRequestValid || !isUserDataValid) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -106,26 +123,7 @@ public class AuthController {
 
 
 
-    @PostMapping("/user/register/request/{userEmail}/{username}")
-    public ResponseEntity<?> registerUserRequest(@PathVariable String userEmail, @PathVariable String username) {
-        authService.validateUsername(username);
-        authService.validateEmail(userEmail);
 
-        boolean userEmailExists = userRepository.findByEmail(userEmail).isPresent();
-        boolean usernameExists = userRepository.findByUsername(username).isPresent();
-        if(userEmailExists && usernameExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
-        }
-        if(userEmailExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This Email is already taken");
-        }
-        if(usernameExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This username is already taken");
-        }
-        String randomCode =mfaService.save(userEmail);
-        sesService.sendCode(userEmail, randomCode);
-        return ResponseEntity.status(HttpStatus.CONTINUE).build();
-    }
 
     @PostMapping("/user/login/request/{username}")
     public ResponseEntity<?> userLoginRequest( @PathVariable String username) {
@@ -243,7 +241,7 @@ public class AuthController {
 
 
     @PostMapping("/employer/confirm/login/{mfaCode}")
-    public ResponseEntity<?> loginEmployerConfirm(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
+    public ResponseEntity<?> loginEmployerConfirm(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         authService.validateUsername(loginRequest.username());
         EmployerModel employer = employerRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("EMPLOYER WITH THIS USERNAME WAS NOT FOUND "+ loginRequest.username()));
 
@@ -328,7 +326,7 @@ public class AuthController {
 
 
     @PostMapping("/staff/confirm/login/{mfaCode}")
-    public ResponseEntity<?> ConfirmStaffLogin(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response, HttpServletRequest request) {
+    public ResponseEntity<?> ConfirmStaffLogin(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         authService.validateUsername(loginRequest.username());
         StaffModel staff = staffRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("THIS Staff DOES NOT EXIST"));
 

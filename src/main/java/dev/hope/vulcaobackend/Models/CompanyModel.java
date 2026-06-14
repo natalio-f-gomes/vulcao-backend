@@ -20,7 +20,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-;
+
 
 @Getter
 @Setter
@@ -69,8 +69,6 @@ public class CompanyModel extends BaseModelEntities {
     @DynamoDbSecondaryPartitionKey(indexNames = "company-email-index")
     public String getEmail() { return email; }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "company-taxId-index")
-    public String getTaxIdNumber() { return taxIdNumber; }
 
     public void onUpdate(){
         this.updatedAt = LocalDateTime.now();
