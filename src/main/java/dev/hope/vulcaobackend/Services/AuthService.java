@@ -4,7 +4,6 @@ package dev.hope.vulcaobackend.Services;
 import dev.hope.vulcaobackend.Models.AccountEntities.AuthModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
-import dev.hope.vulcaobackend.Repositories.AuthRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +17,6 @@ import java.util.List;
 @Service
 public class AuthService {
 
-    @Autowired
-    AuthRepository authRepository;
 
     @Autowired
     private EmployerRepository employerRepository;
@@ -29,52 +26,6 @@ public class AuthService {
 
 
 
-
-
-    public boolean doesTheIpAddressMatch(List<AuthModel> entityLoggedInIpAddresses, String userIpAddress){
-        boolean valid = false;
-        for(AuthModel auth: entityLoggedInIpAddresses){
-            if(auth.getIpAddress().equals(userIpAddress))
-            {   valid=true;
-                break;
-            }
-        }
-        return valid;
-    }
-
-    public void logoutEmployer(String username, String userIpAddress){
-        EmployerModel employerLoggedIn = employerRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Username "+ username + " not found"));
-        List<AuthModel> isUserLoggedInByUsername = authRepository.findByUsername(username);
-        List<AuthModel> employerIpAddresses = authRepository.findByUserIpAddress(userIpAddress);
-        if(isUserLoggedInByUsername.isEmpty() ){throw new org.springframework.security.access.AccessDeniedException("NOT AUTHORIZED TO LOGOUT GIVEN THAT YOU ARE NOT LOGGED IN");}
-        boolean valid = doesTheIpAddressMatch(employerIpAddresses, userIpAddress);
-        if(!valid){
-            {throw new org.springframework.security.access.AccessDeniedException("YOUR IP ADDRESS SHOWS THAT YOU ARE NOT LLOGED IN");}
-        }
-        authRepository.deleteUserLoginData(username);
-    }
-
-    public void loginStaff(StaffModel staffLoggedIn, String userIpAddress, String accessToken){
-        AuthModel userLoginData = new AuthModel();
-        userLoginData.setAccessToken(accessToken);
-        userLoginData.setIpAddress(userIpAddress);
-        userLoginData.setUsername(staffLoggedIn.getUsername());
-        userLoginData.setEmail(staffLoggedIn.getEmail());
-        userLoginData.setIssuedAt(LocalDateTime.now());
-        authRepository.save(userLoginData);
-    }
-
-    public void logoutStaff(String username, String userIpAddress) throws AccessDeniedException {
-        StaffModel staff = staffRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Username "+ username + " not found"));
-        List<AuthModel> isStaffLoggedInByUsername = authRepository.findByUsername(username);
-        List<AuthModel> staffIpAddress = authRepository.findByUserIpAddress(userIpAddress);
-        if(isStaffLoggedInByUsername.isEmpty() ){throw new AccessDeniedException("");}
-        boolean valid = doesTheIpAddressMatch(staffIpAddress, userIpAddress);
-        if(!valid){
-            {throw new AccessDeniedException("");}
-        }
-        authRepository.deleteUserLoginData(username);
-    }
 
     private static final java.util.regex.Pattern EMOJI_PATTERN =
             java.util.regex.Pattern.compile("\\p{IsExtended_Pictographic}");

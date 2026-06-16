@@ -1,0 +1,30 @@
+package dev.hope.vulcaobackend.Models.Properties;
+
+public enum FeatureRequestCategory {
+    UI_DESIGN,
+    MOBILE,
+    DASHBOARD,
+    ORDERS,
+    CART,
+    INVENTORY,
+    STAFF_MANAGEMENT,
+    EMPLOYER_MANAGEMENT,
+    USER_MANAGEMENT,
+    AUTHENTICATION,
+    REPORTING,
+    ANALYTICS,
+    NOTIFICATIONS,
+    INTEGRATIONS,
+    API,
+    SECURITY,
+    PERFORMANCE,
+    AUTOMATION,
+    WORKFLOW,
+    BILLING,
+    PAYMENTS,
+    DATA_EXPORT,
+    SEARCH,
+    ACCESSIBILITY,
+    BUG_FIX,
+    OTHER
+}

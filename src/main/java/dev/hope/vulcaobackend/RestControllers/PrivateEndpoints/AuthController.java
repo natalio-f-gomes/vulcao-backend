@@ -267,7 +267,6 @@ public class AuthController {
     public ResponseEntity<?> employerLogout(HttpServletResponse response,HttpServletRequest request, Principal principal){
         String ip = IPService.getClientIpAddress(request);
         System.out.println("User IP Address "+ ip);
-        authService.logoutEmployer(principal.getName(), ip);
         response.addHeader(HttpHeaders.SET_COOKIE,cookieUtil.clearCookie().toString());
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("LOGGED OUT SUCCESSFULLY");
@@ -355,7 +354,6 @@ public class AuthController {
     public ResponseEntity<?> logoutStaff(HttpServletResponse response,HttpServletRequest request, Principal principal) throws AccessDeniedException {
         String ip = IPService.getClientIpAddress(request);
         System.out.println("User IP Address "+ ip);
-        authService.logoutStaff(principal.getName(), ip);
         response.addHeader(HttpHeaders.SET_COOKIE,cookieUtil.clearCookie().toString());
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("LOGGED OUT SUCCESSFULLY");

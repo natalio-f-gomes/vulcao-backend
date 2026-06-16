@@ -27,9 +27,9 @@ public class AWSSESConfig {
                 .fromEmailAddress("verification@vulcao.net")
                 .destination(Destination.builder().toAddresses(receiver).build())
                 .content(EmailContent.builder().simple(Message.builder()
-                        .subject(Content.builder().data("Your verification code").build())
+                        .subject(Content.builder().data("O seu código de verificação").build())
                         .body(Body.builder().text(Content.builder()
-                                .data("Your code is " + code + ". Expires in 15 minutes.").build()).build())
+                                .data("O seu código é " + code + ". Expira em 15 minutos. Nunca partilhe este código com ninguém. Este código serve para proteger a sua conta e impedir que terceiros ajam em seu nome.").build()).build())
                         .build()).build())
                 .build());
     }

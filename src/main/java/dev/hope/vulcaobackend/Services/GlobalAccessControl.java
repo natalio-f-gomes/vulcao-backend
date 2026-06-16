@@ -15,8 +15,7 @@ import static java.rmi.server.LogStream.log;
 @Service
 public class GlobalAccessControl {
 
-    @Autowired
-    private AuthRepository authRepository;
+
     @Autowired
     StaffRepository staffRepository;
     @Autowired
