@@ -4,74 +4,38 @@ import lombok.Getter;
 
 @Getter
 public enum ProductType {
-    FRESH_PRODUCE,
-    MEAT_POULTRY,
-    SEAFOOD,
-    DAIRY_EGGS,
-    PLANT_BASED,
-    BAKERY,
-    FROZEN,
-    GRAINS_PASTA,
-    CANNED_JARRED,
-    OILS_VINEGARS,
-    SPICES_HERBS,
-    SNACKS,
-    CANDY,
-    BEVERAGES,
-    DELI_PREPARED,
+    // --- MERCEARIA E PRODUTOS FRESCOS ---
+    FRESCOS_E_HORTÍCOLAS,    // Frutas e legumes frescos (Produce)
+    CARNES_E_AVES,
+    PEIXARIA_E_MARISCO,
+    LACTICÍNIOS,
+    PRODUTOS_VEGETAIS,       // Alternativas plant-based
+    PADARIA_E_PASTELARIA,
+    CONGELADOS,
+    CEREAIS_E_MASSAS,
+    CONSERVAS_E_FRASCOS,
+    ÓLEOS_E_VINAGRES,
+    ERVAS_E_ESPECIARIAS,
+    SNACKS_E_APERITIVOS,
+    DOCES_E_CHOCOLATES,
+    BEBIDAS,
+    REFEIÇÕES_PRONTAS_E_CHARCUTARIA,
 
-    // --- ELECTRONICS & COMPUTERS ---
-    ELECTRONICS_COMPONENTS,
-    COMPUTERS_ACCESSORIES,
-    SMART_HOME_DEVICES,
-    VIDEO_GAMES_CONSOLES,
-    AUDIO_HEADPHONES,
-    CAMERAS_PHOTOGRAPHY,
+    // --- ESSENCIAIS DO DIA A DIA PARA A CASA ---
+    LIMPEZA_DA_CASA,          // Detergente da loiça, detergente da roupa, etc.
+    PRODUTOS_DE_PAPEL_E_PLÁSTICO, // Papel higiénico, rolos de cozinha, sacos do lixo
+    MATERIAL_DE_ESCRITÓRIO,   // Canetas, fita cola, artigos básicos de papelaria
 
-    // --- HOME, GARDEN & TOOLS ---
-    KITCHEN_DINING,
-    FURNITURE,
-    BEDDING_BATH,
-    GARDEN_OUTDOOR,
-    HOME_IMPROVEMENT_TOOLS,
-    SMART_LIGHTING,
+    // --- HIGIENE PESSOAL E SAÚDE ---
+    HIGIENE_PESSOAL,         // Champô, pasta de dentes, desodorizante
+    SAÚDE_E_BEM_ESTAR,       // Medicamentos de venda livre (MNSRM), pensos rápidos
 
-    // --- HEALTH, BEAUTY & PERSONAL CARE ---
-    HEALTH_NUTRITION,
-    PERSONAL_CARE,
-    BEAUTY_COSMETICS,
-    PHARMACY_MEDICAL_SUPPLIES,
-    VITAMINS_DIETARY_SUPPLEMENTS,
+    // --- BEBÉ E ANIMAIS DE ESTIMAÇÃO ---
+    ARTIGOS_PARA_BEBÉ,       // Fraldas, toalhitas, comida de bebé
+    ALIMENTAÇÃO_E_ACESSÓRIOS_PARA_ANIMAIS, // Comida para cão/gato e areia sanitária
 
-    // --- FASHION & APPAREL ---
-    CLOTHING_MENS,
-    CLOTHING_WOMENS,
-    CLOTHING_KIDS_BABY,
-    SHOES,
-    JEWELRY_WATCHES,
-    LUGGAGE_TRAVEL_GEAR,
-
-    // --- BABY & PETS ---
-    BABY_INFANT_GEAR,
-    PET_FOOD_SUPPLIES,
-    PET_TOYS_ACCESSORIES,
-
-    // --- TOYS, HOBBIES & SPORTS ---
-    TOYS_GAMES,
-    COLLECTIBLES,
-    SPORTS_EQUIPMENT,
-    OUTDOOR_RECREATION,
-    BOOKS_MAGAZINES,
-    MOVIES_MUSIC,
-
-    // --- AUTOMOTIVE & INDUSTRIAL ---
-    AUTOMOTIVE_PARTS_ACCESSORIES,
-    INDUSTRIAL_SCIENTIFIC,
-    OFFICE_SUPPLIES,
-
-    // --- HOUSEHOLD & MISC ---
-    HOUSEHOLD_CLEANING,
-    PAPER_PLASTIC_PRODUCTS,
-    GIFT_CARDS,
-    OTHER
+    // --- CAIXA E SOUVENIRS / DIVERSOS ---
+    REVISTAS,                // Revistas expostas junto à caixa de pagamento
+    CARTÕES_PRESENTE,
+    OUTROS
 }

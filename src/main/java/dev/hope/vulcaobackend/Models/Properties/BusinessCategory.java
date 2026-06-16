@@ -1,178 +1,25 @@
 package dev.hope.vulcaobackend.Models.Properties;
 public enum BusinessCategory {
-    // ===== Food & Beverage =====
-    RESTAURANT,
-    FAST_FOOD,
-    CAFE,
-    BAKERY,
-    BAR,
-    BREWERY,
-    WINERY,
-    DISTILLERY,
-    FOOD_TRUCK,
-    CATERING,
+    // ===== COMÉRCIO E RETALHO (Supermercados, Lojas e Eletrónica) =====
+    LOJA_DE_CONVENIÊNCIA,
+    SUPERMERCADO,
+    HIPERMERCADO,
+    GRANDES_ARMÁZENS,
+    CENTRO_COMERCIAL,
+    COMÉRCIO_ELETRÓNICO,
+    LOJA_DE_ELETRÓNICA_E_INFORMÁTICA,
+    FABRICANTE_DE_HARDWARE,
 
-    // ===== Retail =====
-    GROCERY_STORE,
-    SUPERMARKET,
-    CONVENIENCE_STORE,
-    DEPARTMENT_STORE,
-    MALL,
-    BOUTIQUE,
-    THRIFT_STORE,
-    ECOMMERCE,
-    WHOLESALE,
-    FARMERS_MARKET,
+    // ===== LIVROS, ENTRETENIMENTO E MEDIA (Filmes, Séries e TV) =====
+    LIVRARIA_E_EDITORIA,
+    CINEMA,
+    PRODUTORA_DE_CINEMA_E_TELEVISÃO,
+    SERVIÇO_DE_STREAMING,
+    CANAIS_DE_TELEVISÃO_E_RÁDIO,
+    EMPRESA_DE_VIDEOJOGOS,
 
-    // ===== Construction & Real Estate =====
-    CONSTRUCTION_COMPANY,
-    GENERAL_CONTRACTOR,
-    ARCHITECTURE_FIRM,
-    ENGINEERING_FIRM,
-    REAL_ESTATE_AGENCY,
-    PROPERTY_MANAGEMENT,
-    INTERIOR_DESIGN,
-    LANDSCAPING,
-
-    // ===== Technology =====
-    SOFTWARE_COMPANY,
-    TECH_STARTUP,
-    IT_SERVICES,
-    WEB_DEVELOPMENT,
-    CYBERSECURITY,
-    DATA_ANALYTICS,
-    AI_ML_COMPANY,
-    CLOUD_SERVICES,
-    TELECOMMUNICATIONS,
-    HARDWARE_MANUFACTURER,
-
-    // ===== Healthcare =====
-    HOSPITAL,
-    CLINIC,
-    PRIVATE_PRACTICE,
-    DENTAL_OFFICE,
-    PHARMACY,
-    VETERINARY,
-    MEDICAL_LAB,
-    NURSING_HOME,
-    REHABILITATION_CENTER,
-    BIOTECH,
-
-    // ===== Finance =====
-    BANK,
-    CREDIT_UNION,
-    INVESTMENT_FIRM,
-    INSURANCE,
-    ACCOUNTING_FIRM,
-    FINANCIAL_ADVISORY,
-    TAX_SERVICES,
-    MORTGAGE_LENDER,
-    FINTECH,
-
-    // ===== Manufacturing & Industrial =====
-    MANUFACTURING,
-    AUTOMOTIVE_MANUFACTURING,
-    TEXTILE,
-    FOOD_PROCESSING,
-    CHEMICAL_MANUFACTURING,
-    PHARMACEUTICAL,
-    AEROSPACE,
-    DEFENSE,
-
-    // ===== Professional Services =====
-    LAW_FIRM,
-    CONSULTING,
-    MARKETING_AGENCY,
-    ADVERTISING_AGENCY,
-    PUBLIC_RELATIONS,
-    STAFFING_AGENCY,
-    HUMAN_RESOURCES,
-    SECURITY_SERVICES,
-    CLEANING_SERVICE,
-
-    // ===== Transportation & Logistics =====
-    LOGISTICS,
-    SHIPPING,
-    TRUCKING,
-    AIRLINE,
-    RAILWAY,
-    RIDESHARE,
-    TAXI_SERVICE,
-    DELIVERY_SERVICE,
-    MOVING_COMPANY,
-    AUTO_REPAIR,
-    AUTO_DEALERSHIP,
-    GAS_STATION,
-    CAR_RENTAL,
-
-    // ===== Entertainment & Media =====
-    MOVIE_THEATER,
-    AMUSEMENT_PARK,
-    CASINO,
-    NIGHTCLUB,
-    MUSIC_VENUE,
-    SPORTS_FACILITY,
-    GAMING_COMPANY,
-    FILM_PRODUCTION,
-    MUSIC_LABEL,
-    PUBLISHING,
-    BROADCASTING,
-    NEWS_AGENCY,
-    STREAMING_SERVICE,
-
-    // ===== Education =====
-    PUBLIC_SCHOOL,
-    PRIVATE_SCHOOL,
-    UNIVERSITY,
-    COMMUNITY_COLLEGE,
-    TRADE_SCHOOL,
-    TUTORING,
-    ONLINE_LEARNING,
-    DAYCARE,
-    TRAINING_CENTER,
-
-    // ===== Hospitality & Travel =====
-    HOTEL,
-    MOTEL,
-    BED_AND_BREAKFAST,
-    RESORT,
-    HOSTEL,
-    TRAVEL_AGENCY,
-    TOUR_OPERATOR,
-
-    // ===== Personal Services =====
-    SALON,
-    BARBERSHOP,
-    SPA,
-    GYM,
-    YOGA_STUDIO,
-    DRY_CLEANING,
-    LAUNDROMAT,
-    PHOTOGRAPHY_STUDIO,
-    PET_SERVICES,
-    FUNERAL_SERVICES,
-
-    // ===== Energy & Utilities =====
-    OIL_AND_GAS,
-    RENEWABLE_ENERGY,
-    UTILITIES,
-    MINING,
-    WASTE_MANAGEMENT,
-    RECYCLING,
-
-    // ===== Agriculture =====
-    AGRICULTURE,
-    FARM,
-    RANCH,
-    FISHERY,
-    FORESTRY,
-    NURSERY,
-
-    // ===== Other =====
-    CHARITY,
-    RELIGIOUS_ORGANIZATION,
-    NONPROFIT_ORGANIZATION,
-    RESEARCH_INSTITUTE,
-    THINK_TANK,
-    OTHER
+    // ===== OUTROS FORMATOS DE VENDA DE BENS =====
+    MERCADO_ABASTECEDOR,
+    LOJA_EM_SEGUNDA_MÃO,
+    OUTROS
 }
