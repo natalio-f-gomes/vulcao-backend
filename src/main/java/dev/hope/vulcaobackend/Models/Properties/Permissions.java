@@ -3,6 +3,7 @@ package dev.hope.vulcaobackend.Models.Properties;
 
 public enum Permissions {
     ADD_PRODUCT, UPDATE_PRODUCT, DELETE_PRODUCT,
+    ADD_WEARABLE, UPDATE_WEARABLE, DELETE_WEARABLE,
     ASSIGN_TASKS, CREATE_TASK, DELETE_TASK,
     VIEW_REPORTS,;
 

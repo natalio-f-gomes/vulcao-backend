@@ -2,15 +2,17 @@ package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
 import dev.hope.vulcaobackend.DataTransferObjects.OfferingImageUploadRequest;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
-import dev.hope.vulcaobackend.Models.Offerings.BookModel;
-import dev.hope.vulcaobackend.Models.Offerings.MovieModel;
-import dev.hope.vulcaobackend.Models.Offerings.MusicModel;
-import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
+import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
+import dev.hope.vulcaobackend.Models.Offerings.*;
 import dev.hope.vulcaobackend.Models.Properties.OfferingType;
+import dev.hope.vulcaobackend.Models.Properties.Permissions;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
+import dev.hope.vulcaobackend.Repositories.Offerings.WearableRepository;
+import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import dev.hope.vulcaobackend.Services.ImageUploadRequestService;
 import dev.hope.vulcaobackend.Services.Offerings.ProductService;
+import dev.hope.vulcaobackend.Services.Offerings.WearableService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +49,12 @@ public class OfferingsController {
     public static final long MAX_BYTES = 5L * 1024 * 1024; // 5 MB guard
     @Autowired
     private EmployerRepository employerRepository;
+    @Autowired
+    private WearableRepository wearableRepository;
+    @Autowired
+    private WearableService wearableService;
+    @Autowired
+    private StaffRepository staffRepository;
 
 
     public String generateNewIdForOffering(OfferingType type) {
@@ -59,6 +67,13 @@ public class OfferingsController {
                     randomId = UUID.randomUUID().toString();
                 }
             }
+            case WEARABLE -> {
+                boolean doesProductIdExists =true;
+                while (doesProductIdExists) {
+                    doesProductIdExists = wearableRepository.findById(randomId).isPresent();
+                    randomId = UUID.randomUUID().toString();
+                }
+            }
         }
         return randomId;
     }
@@ -67,7 +82,12 @@ public class OfferingsController {
         ProductModel product = productRepository.findById(productId).orElseThrow(()-> new RuntimeException("There is no such product with this ID"));
         product.setImgS3UrlKeys(keys);
         productRepository.update(product);
+    }
 
+    public void addWearableImageKeys(String itemId, List<String> keys){
+        WearableModel item = wearableRepository.findById(itemId).orElseThrow(()-> new RuntimeException("There is no such product with this ID"));
+        item.setImgS3UrlKeys(keys);
+        wearableRepository.update(item);
     }
 
     @PostMapping("/image/upload/confirm")
@@ -118,8 +138,15 @@ public class OfferingsController {
                     .destinationBucket(READ_BUCKET).destinationKey(key)
                     .build());
         }
+        System.out.println("OFFERING TYPE TYPE: " + body.getOfferingType());
 
-        addProductImageKeys(body.getOfferingId(), keys);
+        if(body.getOfferingType().equals(OfferingType.PRODUCT)){
+            addProductImageKeys(body.getOfferingId(), keys);
+        }
+        if(body.getOfferingType().equals(OfferingType.WEARABLE)){
+            addWearableImageKeys(body.getOfferingId(), keys);
+        }
+
         System.out.println("Confirmed " + keys.size() + " image(s) for offering "
                 + body.getOfferingId());
         for (String key : keys) {
@@ -142,9 +169,23 @@ public class OfferingsController {
     }
 
     @PutMapping("/product/update/image")
-    public ResponseEntity<?> employerUpdateProductImage(@RequestBody ProductModel newProduct){
+    public ResponseEntity<?> updateProductImage(@RequestBody ProductModel newProduct){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no employer with this name"));
+        boolean employerExists = employerRepository.findByUsername(sessionUser).isPresent();
+        boolean staffExists = staffRepository.findByUsername(sessionUser).isPresent();
+        if(!employerExists && !staffExists){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if(staffExists){
+            StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Staff with username: " + sessionUser + " not found!"));
+            if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_WEARABLE)){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+        if(employerExists){
+            EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Employer with username: " + sessionUser + " not found!"));
+        }
+
         if(newProduct.getImagesMetadata() == null){return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NO IMAGES ASSOCIATED WITH THIS PRODUCT"); }
         for (String key : newProduct.getImgS3UrlKeys()) {
             s3Client.deleteObject(DeleteObjectRequest.builder()
@@ -152,7 +193,6 @@ public class OfferingsController {
             System.out.println("KEY CLEANED UP: "+ key);
         }
         return uploadRequestService.requestProductPresignedUrls(newProduct);
-
 
     }
 
@@ -196,6 +236,85 @@ public class OfferingsController {
         productService.staffDeleteProduct(id,userSession, request);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+    // Add PRODUCT
+    @PostMapping("/wearable/employer/add")
+    public ResponseEntity<?> employerAddWearable(@RequestBody WearableModel newItem, HttpServletRequest request){
+        String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        String randomId = generateNewIdForOffering(OfferingType.WEARABLE);
+        newItem.setId(randomId);
+        wearableService.employerSaveWearable(newItem,userSession);
+        return uploadRequestService.requestWearablePresignedUrls(newItem);
+    }
+
+    // EMPLOYER UPDATE WEARABLE
+    @PutMapping("/wearable/update/image")
+    public ResponseEntity<?> employerUpdateWearableImage(@RequestBody WearableModel wearable){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        boolean employerExists = employerRepository.findByUsername(sessionUser).isPresent();
+        boolean staffExists = staffRepository.findByUsername(sessionUser).isPresent();
+        if(!employerExists && !staffExists){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if(staffExists){
+            StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Staff with username: " + sessionUser + " not found!"));
+            if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_WEARABLE)){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+        if(employerExists){
+            EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Employer with username: " + sessionUser + " not found!"));
+        }
+
+        if(wearable.getImagesMetadata() == null){return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NO IMAGES ASSOCIATED WITH THIS PRODUCT"); }
+        for (String key : wearable.getImgS3UrlKeys()) {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(READ_BUCKET).key(key).build());
+            System.out.println("KEY CLEANED UP: "+ key);
+        }
+        return uploadRequestService.requestWearablePresignedUrls(wearable);
+    }
+
+    @PutMapping("/wearable/employer/update/{id}")
+    public ResponseEntity<?> employerUpdateWearable(@PathVariable String id, @RequestBody WearableModel newItem){
+        String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        wearableService.employerUpdateProduct(id, newItem,userSession);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+
+    @PostMapping("/wearable/staff/add")
+    public ResponseEntity<?> staffAddWearable(@RequestBody WearableModel newItem){
+        String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        String randomId = generateNewIdForOffering(OfferingType.PRODUCT);
+        newItem.setId(randomId);
+        wearableService.staffSaveWearable(newItem,userSession);
+        return uploadRequestService.requestWearablePresignedUrls(newItem);
+    }
+
+    @PutMapping("/wearable/staff/update/{id}")
+    public ResponseEntity<?> staffUpdateWearable(@PathVariable String id, @RequestBody WearableModel newItem){
+        String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        wearableService.staffUpdateWearable(id, newItem,userSession);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // DELETE PRODUCT
+    @DeleteMapping("/wearable/employer/delete/{id}")
+    public ResponseEntity<?> employerDeleteWearable(@PathVariable String id){
+        String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        wearableService.employerDeleteProduct(id,userSession);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @DeleteMapping("/wearable/staff/delete/{id}")
+    public ResponseEntity<?> staffDeleteWearable(@PathVariable String id){
+        String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        wearableService.staffDeleteProduct(id,userSession);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+
 
 
 }

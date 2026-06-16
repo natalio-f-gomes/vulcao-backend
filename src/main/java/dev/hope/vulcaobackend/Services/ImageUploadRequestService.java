@@ -3,6 +3,7 @@ package dev.hope.vulcaobackend.Services;
 import dev.hope.vulcaobackend.DataTransferObjects.ImageMetadata;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
+import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
 import dev.hope.vulcaobackend.Models.Properties.OfferingType;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,6 +47,7 @@ public class ImageUploadRequestService {
             case TV_SHOW -> "offerings/tv_shows/" + itemId + "/" +  UUID.randomUUID();
             case ELECTRONIC -> "offerings/electronics/" + itemId + "/" + UUID.randomUUID();
             case BOOK -> "offerings/books/" + itemId + "/"+   UUID.randomUUID();
+            case WEARABLE -> "offerings/wearables/" + itemId + "/"+   UUID.randomUUID();
             default -> null;
         };
     }
@@ -83,7 +85,7 @@ public class ImageUploadRequestService {
         return generateUrlAndSignTheKey(key, contentType);
     }
 
-    // THIS IS THE ENDPOINT THAT WILL BE CALLED
+    // THIS IS THE ENDPOINT THAT WILL BE CALLED FOR PRODUCT
     public ResponseEntity<?> requestProductPresignedUrls(ProductModel product) {
         System.out.println("Request image url endpoint: ");
         List<ImageMetadata> images = product.getImagesMetadata();
@@ -142,5 +144,36 @@ public class ImageUploadRequestService {
                 "uploadResult", results
         ));
     }
+    // THIS IS THE ENDPOINT THAT WILL BE CALLED FOR PRODUCT
+    public ResponseEntity<?> requestWearablePresignedUrls(WearableModel item) {
+        System.out.println("Request image url endpoint: ");
+        List<ImageMetadata> images = item.getImagesMetadata();
+        for(ImageMetadata meta: images){
+            System.out.println("Metadata Name: " + meta.getName());
+            System.out.println("Metadata Size: " + meta.getByteSize());
+            System.out.println("Metadata Type: " + meta.getExtension());
+        }
+        // ---- enforce the limit server-side ----
+        if (images.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        if (images.size() > MAX_IMAGES) {
+            return ResponseEntity.badRequest()
+                    .body("Too many images. Maximum allowed is " + MAX_IMAGES + ".");
+        }
+        // ---- one presigned PUT per image ----
+        List<PresignResult> results = new ArrayList<>();
+        for (ImageMetadata meta : images) {
+            PresignResult presignUrl = createOfferingPresignedURL(item.getOfferingType(), item.getId(),  meta.getExtension());
+            System.out.println("Presign URL: "+ presignUrl.url() + " Presign Key" + presignUrl.key());
+            results.add(presignUrl);
+        }
+        return ResponseEntity.ok(Map.of(
+                "offeringId",  item.getId(),
+                "uploadResult", results
+        ));
+    }
+
+
     public record PresignResult(String url, String key) {}
 }

@@ -5,5 +5,5 @@ import lombok.Setter;
 
 @Getter
 public enum OfferingType {
-    PRODUCT, TV_SHOW, MOVIE, BOOK, ELECTRONIC, MUSIC
+    PRODUCT, TV_SHOW, MOVIE, BOOK, ELECTRONIC, MUSIC, WEARABLE
 }

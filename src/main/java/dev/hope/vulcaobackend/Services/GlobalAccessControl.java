@@ -2,6 +2,7 @@ package dev.hope.vulcaobackend.Services;
 
 
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
+import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
 import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,21 @@ public class GlobalAccessControl {
         if(!field.matches(VALID_PATTERN)){throw new RuntimeException("Field:{ " + field + " } is not valid. ");}
         return true;
     }
+
+
+    public boolean isWearableValid(WearableModel item){
+        if(item.getName().isBlank() || item.getName().length() > 200){throw new RuntimeException("Product name cannot be over 50 chars long nor be empty");}
+        if(item.getDescription().isBlank() || item.getDescription().length() > 2500){throw new RuntimeException("Product description cannot be over 20000 chars long nor be empty");}
+        if(item.getPrice() == null || item.getPrice() < 0){throw new RuntimeException("Product Price cannot be null");}
+
+        if(item.getCompanyId().isBlank() ){throw new RuntimeException("The product MUST BE ASSOCIATED WITHA  COMPANY");}
+        isFieldValid(item.getName());
+        isFieldValid(item.getDescription());
+        log("PRODUCT " + item.getName() + " is Valid");
+        return true;
+    }
+
+
 
     public boolean isProductValid(ProductModel product){
         if(product.getName().isBlank() || product.getName().length() > 200){throw new RuntimeException("Product name cannot be over 50 chars long nor be empty");}
