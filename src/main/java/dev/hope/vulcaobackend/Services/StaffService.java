@@ -38,6 +38,8 @@ public class StaffService {
     @Autowired private CompanyRepository companyRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private StaffMapper staffMapper;
+    @Autowired
+    private AuthService authService;
 
     public StaffDTO findStaffById(String id){
         StaffModel staff =  staffRepository.findById(id)
@@ -219,14 +221,15 @@ public class StaffService {
     }
 
     //EDIT CREDENTIALS
-    public void editStaffCredentials(String username, UserCredentials newCredentials, HttpServletRequest request) throws AccessDeniedException {
-        if(newCredentials.getUsername()== null || newCredentials.getPassword() == null){
+    public void editStaffCredentials(String staffId, UserCredentials newCredentials) throws AccessDeniedException {
+        if(newCredentials.getUsername()== null || newCredentials.getPassword() == null || newCredentials.getUsername().length() < 8 || newCredentials.getPassword().length() < 8){
             throw new RuntimeException("BOTH USERNAME AND PASSWORD MUST BE FILLED");
         }
+        authService.validateUsername(newCredentials.getUsername());
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(
                 ()-> new UsernameNotFoundException("Staff With username: " + sessionUser + " not found"));
-        if(!staff.getUsername().equals(username)){
+        if(!staff.getId().equals(staffId)){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS USER DATA");
         }
 

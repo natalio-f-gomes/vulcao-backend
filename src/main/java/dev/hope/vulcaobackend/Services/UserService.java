@@ -33,7 +33,8 @@ public class UserService {
     private UserMapper userMapper;
     @Autowired
     private GlobalAccessControl globalAccessControl;
-
+    @Autowired
+    private AuthService authService;
 
 
     public void save(UserModel newUser){
@@ -218,6 +219,10 @@ public class UserService {
             if(newCredentials.getUsername()== null || newCredentials.getPassword() == null){
                 log.warn("editUserCredentials() -> rejected: username or password missing, userId={}", userId);
                 throw new RuntimeException("BOTH USERNAME AND PASSWORD MUST BE FILLED");
+            }
+            authService.validateUsername(newCredentials.getUsername());
+            if(newCredentials.getPassword().length() < 8){
+                throw new RuntimeException("The Password length must be at least 8 characters long");
             }
             String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
             // NOTE: never log newCredentials.getPassword()

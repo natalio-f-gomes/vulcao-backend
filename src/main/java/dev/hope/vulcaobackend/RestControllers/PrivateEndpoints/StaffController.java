@@ -77,10 +77,12 @@ public class StaffController {
 
 
 
-    @PutMapping("/update/{username}/credentials")
-    public ResponseEntity<?>  updateStaffCredentials(@PathVariable String username, UserCredentials newCredentials, HttpServletRequest request )  {
+    @PutMapping("/update/{staffId}/credentials")
+    public ResponseEntity<?>  updateStaffCredentials(@PathVariable String staffId, @RequestBody UserCredentials newCredentials )  {
         try{
-            staffService.editStaffCredentials(username, newCredentials, request);
+            System.out.println("STAFF USERNAME: " + newCredentials.getUsername());
+            System.out.println("STAFF PASSWORD: " + newCredentials.getPassword());
+            staffService.editStaffCredentials(staffId, newCredentials);
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

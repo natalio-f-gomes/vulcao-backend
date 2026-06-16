@@ -38,6 +38,8 @@ public class EmployerService {
     private CompanyRepository companyRepository;
     @Autowired
     private CompanyMapper companyMapper;
+    @Autowired
+    private AuthService authService;
 
 
     public EmployerDTO findEmployerByUsername(String username){
@@ -76,10 +78,10 @@ public class EmployerService {
 //                .collect(Collectors.toList());
 //    }
 
-    public EmployerModel checkEmployerPermissions(String username) throws AccessDeniedException {
+    public EmployerModel checkEmployerPermissions(String userId) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(() -> new
-                UsernameNotFoundException("Employer with username " + username + " does not exist"));
+        EmployerModel employer = employerRepository.findById(userId).orElseThrow(() -> new
+                UsernameNotFoundException("Employer with id " + userId + " does not exist"));
         if(!sessionUser.equals(employer.getUsername())){
             throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS PROFILE");
         }
@@ -101,9 +103,10 @@ public class EmployerService {
         employerRepository.update(employer);
     }
 
-    public void updateEmployerCredentials(String username, UserCredentials credentials) throws AccessDeniedException {
-        EmployerModel employer = checkEmployerPermissions(username);
-        if(credentials.getPassword().isBlank() || credentials.getUsername().isBlank()){
+    public void updateEmployerCredentials(String userId, UserCredentials credentials) throws AccessDeniedException {
+        EmployerModel employer = checkEmployerPermissions(userId);
+        authService.validateUsername(credentials.getUsername());
+        if(credentials.getPassword().isBlank() || credentials.getUsername().isBlank() || credentials.getPassword().length() < 8 || credentials.getUsername().length() < 8){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         employer.setUsername(credentials.getUsername());

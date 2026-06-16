@@ -56,10 +56,11 @@ public class EmployerController {
         }
     }
 
-    @PutMapping("/update/{username}/credentials")
-    public ResponseEntity<?>  updateUserCredentials(@PathVariable String username, UserCredentials newCredentials ) throws AccessDeniedException {
+    @PutMapping("/update/{employerId}/credentials")
+    public ResponseEntity<?>  updateUserCredentials(@PathVariable String employerId, @RequestBody UserCredentials newCredentials ) throws AccessDeniedException {
         try{
-            employerService.updateEmployerCredentials(username, newCredentials);
+            System.out.println("New username: " + newCredentials.getUsername());
+            employerService.updateEmployerCredentials(employerId, newCredentials);
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
