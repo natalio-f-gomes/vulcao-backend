@@ -6,6 +6,8 @@ import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
 import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -32,10 +34,11 @@ public class GlobalAccessControl {
             "[", "]", "{", "}", ",", "=", "...",
             "@", "#", "$", "%", "^", "&", "*", "(", ")", "!",
             "/", "\\", "|", ":", ";", "?", "<", ">",
-            "~", "`", "'", "\"", "_",
+            "~", "`", "'", "\"",
             "->", "=>", "::", "!=", "==", "<=", ">=", "&&", "||",
             "++", "--", "+=", "-=", "*=", "/=", "%=",
             "/*", "*/", "//", "/**"
+
     };
     @Autowired
     private TaskRepository taskRepository;
@@ -141,46 +144,5 @@ public class GlobalAccessControl {
 
 
 
-
-    public boolean isDataValid(String... text) {
-        for (String t : text) {
-            if (t == null || !t.matches("^[\\p{L}\\p{M}\\p{N}._\\- ]+$")) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean isRequestValid(String username, String email, String password, String firstName, String lastName) {
-        System.out.println("Username " + username + " email: " + email + " password " + password);
-        if (username.isBlank() || email.isBlank() || password.isBlank() || !email.contains("@") || firstName.length() > 100 || lastName.length() > 100 ||
-                (username.length() < 3) || username.length() > 20 || password.length() < 8 || password.length() > 50 || (password.strip().length() != password.length() )) return false;
-        CharSequence[] symbols = {
-                "[", "]", "{", "}", ",", "=", " ",
-                "...",
-                "@", "#", "$", "%", "^", "&", "*", "(", ")", "!",
-                "+", "-", "/", "\\", "|", ":", ";", "?", "<", ">",
-                "~", "`", "'", "\"", "\n",
-                "->", "=>", "::", "!=", "==", "<=", ">=", "&&", "||",
-                "++", "--", "+=", "-=", "*=", "/=", "%=",
-                "/*", "*/", "//", "/**"
-        };
-        System.out.println("Received username: [" + username + "]");
-        System.out.println("Length: " + username.length());
-        System.out.println("Bytes (UTF-8): " + Arrays.toString(username.getBytes(StandardCharsets.UTF_8)));
-
-        for (CharSequence symbol : symbols) {
-            if (username.contains(symbol)) {
-                System.out.println("Rejected by symbol: [" + symbol + "]");
-                return false;
-            }
-        }
-        return true;
-    }
-    public String determineRole(String username) {
-        if (employerRepository.findByUsername(username).isPresent()) return "EMPLOYER";
-        if (staffRepository.findByUsername(username).isPresent())  return "STAFF";
-        return "USER";
-    }
 
 }

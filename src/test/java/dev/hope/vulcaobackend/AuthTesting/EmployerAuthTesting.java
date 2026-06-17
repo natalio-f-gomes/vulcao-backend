@@ -1,7 +1,9 @@
 package dev.hope.vulcaobackend.AuthTesting;
 
 
+import dev.hope.vulcaobackend.CleanTable;
 import dev.hope.vulcaobackend.RequestHandler;
+import dev.hope.vulcaobackend.VulcaoBackendApplication;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +37,7 @@ import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @ActiveProfiles("local")
-public class EmployerAuthTesting {
+public class EmployerAuthTesting extends CleanTable {
     @LocalServerPort
     private int port;
     @Autowired

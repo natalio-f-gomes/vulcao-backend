@@ -74,7 +74,7 @@ public class StaffService {
         return staffMapper.transformData(staff);
     }
 
-    public void registerStaff(StaffModel newStaff, HttpServletRequest request) {
+    public void registerStaff(StaffModel newStaff) {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         CompanyModel staffCompany = companyRepository.findById(newStaff.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Company with id " + newStaff.getCompanyId() + " not found"));

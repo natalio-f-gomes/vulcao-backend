@@ -38,7 +38,7 @@ public class CompanyService {
     public boolean isNameTaxIdAndDescriptionValid(String name, String taxId, String description){
         if(name == null || name.isEmpty()){throw new RuntimeException("Company Name cannot be null");}
         String NAME_PATTERN = "^[\\p{L}0-9 !+_.-]+$";
-        String TAX_ID_FORMAT = "^\\d{9}$";
+        String TAX_ID_FORMAT = "^\\d{0,50}$";
         if(name.length() > 500){
             throw new IllegalArgumentException("The company name cannot be over 500 characters long");
         }
@@ -65,7 +65,7 @@ public class CompanyService {
         if (!phoneNumber.matches(CV_PHONE_FORMAT)) {
             throw new RuntimeException("COMPANY PHONE NUMBER DOES NOT MATCH A VALID CAPE VERDE PHONE NUMBER");
         }
-        String TAX_ID_FORMAT = "^\\d{9}$";
+        String TAX_ID_FORMAT = "^\\d{0,50}$";
         if(faxNumber.isBlank()){
             return true;
         }

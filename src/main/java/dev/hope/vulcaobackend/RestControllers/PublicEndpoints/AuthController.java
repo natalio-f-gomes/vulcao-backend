@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -72,7 +73,7 @@ public class AuthController {
 
         boolean usernameExists = userRepository.findByUsername(username).isPresent();
         if(usernameExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Este nome de usuário já está em uso.Por favor escolhe um nome the usuário differente");
         }
 
         String randomCode =mfaService.save(userEmail);
@@ -80,38 +81,55 @@ public class AuthController {
         return ResponseEntity.accepted().build(); //202
     }
 
+
     @PostMapping("/user/register/confirm/{mfaCode}")
-    public ResponseEntity<?> confirmMFA(@PathVariable String mfaCode, @RequestBody UserModel newUser){
-        ResponseEntity<?> response =  mfaService.confirmMFA(newUser.getEmail(), mfaCode);
-        if(!response.getStatusCode().isSameCodeAs(HttpStatus.OK)){
-            return response;
+    public ResponseEntity<?> userRegisterConfirm(@PathVariable String mfaCode, @RequestBody UserModel newUser){
+        // Validate MFA
+        ResponseEntity<?> mfaResponse = mfaService.confirmMFA(newUser.getEmail(), mfaCode);
+        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return mfaResponse;
         }
 
-        boolean isRequestValid = globalAccessControl.isRequestValid(newUser.getUsername(), newUser.getEmail(), newUser.getPassword(), newUser.getFirstName(), newUser.getLastName());
-        boolean isUserDataValid = globalAccessControl.isDataValid(newUser.getUsername(), newUser.getFirstName(), newUser.getLastName(), newUser.getPassword());
-        authService.validateEmail(newUser.getEmail());
-        authService.validateUsername(newUser.getUsername());
-        System.out.println("THE USER DATA IS VALID? : " + isUserDataValid);
-        if (!isRequestValid || !isUserDataValid) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        // Validate name
+        ResponseEntity<?> nameResponse = authService.validateName(newUser.getFirstName(), newUser.getLastName());
+        if(!nameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return nameResponse;
         }
+
+        // Validate email
+        ResponseEntity<?> emailResponse = authService.validateEmail(newUser.getEmail());
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+
+        // Validate username
+        ResponseEntity<?> usernameResponse = authService.validateUsername(newUser.getUsername());
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
+
+        // Check if user already exists
         boolean entityExists = globalAccessControl.checkIfEntityExistsBeforeRegister(newUser.getUsername());
-        System.out.println("User EXISTS Response: "+ response);
+        System.out.println("User EXISTS: " + entityExists);
         if (entityExists) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Este nome de utilizador já está em uso. Por favor, escolhe outro nome de utilizador"));
         }
-
+        // Save the user
         try {
             String userId = globalAccessControl.generateNewIdForUser();
             newUser.setId(userId);
             userService.save(newUser);
+            mfaService.deleteMFA(newUser.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (NullPointerException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Erro ao criar utilizador. Por favor, tente novamente."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Erro inesperado. Por favor, tente novamente."));
         }
-
     }
-
 
 
 
@@ -148,9 +166,10 @@ public class AuthController {
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Credentials");
         }
-        String role = globalAccessControl.determineRole(loginRequest.username());
+        String role = authService.determineRole(loginRequest.username());
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
+        mfaService.deleteMFA(user.getEmail());
         return ResponseEntity.ok("Logged In");
     }
 
@@ -175,40 +194,27 @@ public class AuthController {
         if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.OK)){
             return mfaResponse;
         }
-        boolean isRequestValid = globalAccessControl.isRequestValid(
-                newEmployer.getUsername(),
-                newEmployer.getEmail(),
-                newEmployer.getPassword(),
-                newEmployer.getFirstName(),
-                newEmployer.getLastName()
-        );
+        ResponseEntity<?> nameResponse = authService.validateName(newEmployer.getFirstName(), newEmployer.getLastName());
+        ResponseEntity<?> emailResponse =   authService.validateEmail(newEmployer.getEmail());
+        ResponseEntity<?> usernameResponse =authService.validateUsername(newEmployer.getUsername());
 
-        boolean isUserDataValid = globalAccessControl.isDataValid(
-                newEmployer.getUsername(),
-                newEmployer.getFirstName(),
-                newEmployer.getLastName(),
-                newEmployer.getPassword()
-        );
-
-        try {
-            authService.validateEmail(newEmployer.getEmail());
-            authService.validateUsername(newEmployer.getUsername().trim()); // Trim the username
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        if(!nameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return nameResponse;
         }
-
-        if (!isRequestValid || !isUserDataValid) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Invalid user data provided");
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
         }
 
         boolean entityExists = globalAccessControl.checkIfEntityExistsBeforeRegister(
-                newEmployer.getUsername().trim()
+                newEmployer.getUsername()
         );
 
         if(entityExists){
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Username already exists");
+                    .body("Este nome de utilizador já está em uso. Por favor, escolhe outro nome de utilizador");
         }
 
         try {
@@ -229,9 +235,17 @@ public class AuthController {
 
     @PostMapping("/employer/request/register/{email}/{username}")
     public ResponseEntity<?> registerEmployerRequest(@PathVariable String email, @PathVariable String username) {
+        ResponseEntity<?> usernameResponse = authService.validateUsername(username);
+        ResponseEntity<?> emailResponse = authService.validateEmail(email);
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
         boolean usernameExists = employerRepository.findByUsername(username).isPresent();
         if(usernameExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Este nome de utilizador já está em uso. Por favor, escolhe outro nome de utilizador");
         }
         authService.validateEmail(email);
         String randomCode = mfaService.save(email);
@@ -241,7 +255,10 @@ public class AuthController {
 
     @PostMapping("/employer/request/login/{username}")
     public ResponseEntity<?> employerLoginRequest( @PathVariable String username) {
-        authService.validateUsername(username);
+        ResponseEntity<?> usernameResponse = authService.validateUsername(username);
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
         boolean usernameExists = employerRepository.findByUsername(username).isPresent();
         if(!usernameExists){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
@@ -269,10 +286,11 @@ public class AuthController {
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Credentials");
         }
-        String role = globalAccessControl.determineRole(loginRequest.username());
+        String role = authService.determineRole(loginRequest.username());
         System.out.println("ROLE: "+ role);
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
+        mfaService.deleteMFA(employer.getEmail());
         return ResponseEntity.ok("Employer Logged In");
     }
 
@@ -286,26 +304,25 @@ public class AuthController {
     }
 
     @PostMapping("/staff/register")
-    public ResponseEntity<?> registerStaff(@RequestBody StaffModel newStaff, HttpServletRequest request){
+    public ResponseEntity<?> registerStaff(@RequestBody StaffModel newStaff){
 
         if(newStaff.getCompanyId().isBlank()){
             return ResponseEntity.badRequest()
                     .body(new APIResponse(null, "Company ID is required",400, LocalDateTime.now()));
         }
-        boolean isRequestValid = globalAccessControl.isRequestValid(newStaff.getUsername(), newStaff.getEmail(), newStaff.getPassword(), newStaff.getFirstName(), newStaff.getLastName());
-        boolean isUserDataValid = globalAccessControl.isDataValid(newStaff.getUsername(), newStaff.getFirstName(), newStaff.getLastName(), newStaff.getPassword());
-            authService.validateEmail(newStaff.getEmail());
-            authService.validateUsername(newStaff.getUsername());
-            System.out.println("THE USER DATA IS VALID? : " + isUserDataValid);
-           if (!isRequestValid || !isUserDataValid) {
-              return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-          }
+        ResponseEntity<?> nameResponse = authService.validateName(newStaff.getFirstName(), newStaff.getLastName());
+        ResponseEntity<?> emailResponse =   authService.validateEmail(newStaff.getEmail());
+        ResponseEntity<?> usernameResponse =authService.validateUsername(newStaff.getUsername());
 
-        if(!globalAccessControl.isRequestValid(newStaff.getUsername(), newStaff.getEmail(), newStaff.getPassword(), newStaff.getFirstName(), newStaff.getLastName())){
-            return ResponseEntity.badRequest()
-                    .body(new APIResponse(null, "Invalid input",400, LocalDateTime.now()));
+        if(!nameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return nameResponse;
         }
-
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
         if(globalAccessControl.checkIfEntityExistsBeforeRegister(newStaff.getUsername())){
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new APIResponse(null, "User already exists", 409, LocalDateTime.now()));
@@ -313,7 +330,7 @@ public class AuthController {
         try {
             String staffId = globalAccessControl.generateNewIdForStaff();
             newStaff.setId(staffId);
-            staffService.registerStaff(newStaff, request);
+            staffService.registerStaff(newStaff);
                         //cartService.createCartOnce(newUser);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new APIResponse("Staff registered successfully", null, 201, LocalDateTime.now()));
@@ -325,7 +342,10 @@ public class AuthController {
 
     @PostMapping("/staff/request/login/{username}")
     public ResponseEntity<?> staffLoginRequest( @PathVariable String username) {
-        authService.validateUsername(username);
+        ResponseEntity<?> usernameResponse =authService.validateUsername(username);
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
         boolean usernameExists = staffRepository.findByUsername(username).isPresent();
         if(!usernameExists){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
@@ -355,13 +375,13 @@ public class AuthController {
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Credentials");
         }
-        String role = globalAccessControl.determineRole(loginRequest.username());
+        String role = authService.determineRole(loginRequest.username());
         System.out.println("ROLE: "+ role);
         String token = jwtService.generateJWTToken(loginRequest.username(), role);
         response.addHeader(HttpHeaders.SET_COOKIE, cookieUtil.createCookie(token).toString());
+        mfaService.deleteMFA(staff.getEmail());
         return ResponseEntity.ok("Staff Logged In");
     }
-
 
     @PostMapping("/staff/logout")
     public ResponseEntity<?> logoutStaff(HttpServletResponse response,HttpServletRequest request, Principal principal) throws AccessDeniedException {
@@ -370,7 +390,6 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE,cookieUtil.clearCookie().toString());
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("LOGGED OUT SUCCESSFULLY");
-
     }
 
 }
