@@ -28,18 +28,6 @@ public class MFAService {
 
     public String save(String email){
         String randomCode = generateRandomCode();
-        boolean isUserEmailPresent = mfaRepository.findByUserEmail(email).isPresent();
-        if(isUserEmailPresent){
-            MFAModel mfaData = mfaRepository.findByUserEmail(email).orElseThrow(()-> new RuntimeException("USER EMAIL NOT FOUND: "+ email));
-            mfaData.setSendTime(LocalDateTime.now());
-            mfaData.setUserEmail(email);
-            mfaData.setAuthCode(randomCode);
-            mfaData.setExpirationTime(LocalDateTime.now().plusMinutes(15));
-            mfaData.setSendTime(LocalDateTime.now());
-            mfaRepository.update(mfaData);
-            return randomCode;
-        }
-
         MFAModel mfaData = new MFAModel();
         mfaData.setAuthCode(randomCode);
         mfaData.setUserEmail(email);

@@ -73,17 +73,11 @@ public class AuthController {
         authService.validateUsername(username);
         authService.validateEmail(userEmail);
 
-        boolean userEmailExists = userRepository.findByEmail(userEmail).isPresent();
         boolean usernameExists = userRepository.findByUsername(username).isPresent();
-        if(userEmailExists && usernameExists){
+        if(usernameExists){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
         }
-        if(userEmailExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This Email is already taken");
-        }
-        if(usernameExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This username is already taken");
-        }
+
         String randomCode =mfaService.save(userEmail);
         sesService.sendCode(userEmail, randomCode);
         return ResponseEntity.status(HttpStatus.CONTINUE).build();
@@ -210,17 +204,11 @@ public class AuthController {
 
     @PostMapping("/employer/request/register/{email}/{username}")
     public ResponseEntity<?> registerEmployerRequest(@PathVariable String email, @PathVariable String username) {
-        boolean employerEmailExists = employerRepository.findByEmail(email).isPresent();
         boolean usernameExists = employerRepository.findByUsername(username).isPresent();
-        if(employerEmailExists && usernameExists){
+        if( usernameExists){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Both the email and the username already taken");
         }
-        if(employerEmailExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This Email is already taken");
-        }
-        if(usernameExists){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("This username is already taken");
-        }
+        authService.validateEmail(email);
         String randomCode = mfaService.save(email);
         sesService.sendCode(email, randomCode);
         return ResponseEntity.status(HttpStatus.CONTINUE).build();
