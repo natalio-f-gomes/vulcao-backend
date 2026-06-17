@@ -5,17 +5,19 @@ import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
+import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 
 @SpringBootTest
-@ActiveProfiles("test")
+@ActiveProfiles("local")
 class VulcaoBackendApplicationTests {
 
 	@Autowired
@@ -44,17 +46,10 @@ class VulcaoBackendApplicationTests {
 				TableSchema.fromBean(ProductModel.class));
 		products.scan().items().forEach(products::deleteItem);
 
-		DynamoDbTable<ProductModel> musics = enhancedClient.table("Music",
-				TableSchema.fromBean(ProductModel.class));
-		musics.scan().items().forEach(musics::deleteItem);
+		DynamoDbTable<WearableModel> wearables = enhancedClient.table("Wearables",
+				TableSchema.fromBean(WearableModel.class));
+		wearables.scan().items().forEach(wearables::deleteItem);
 
-		DynamoDbTable<ProductModel> tvShows = enhancedClient.table("TvShows",
-				TableSchema.fromBean(ProductModel.class));
-		tvShows.scan().items().forEach(tvShows::deleteItem);
-
-		DynamoDbTable<ProductModel> movies = enhancedClient.table("Movies",
-				TableSchema.fromBean(ProductModel.class));
-		movies.scan().items().forEach(movies::deleteItem);
 	}
 	@Test
 	void contextLoads() {

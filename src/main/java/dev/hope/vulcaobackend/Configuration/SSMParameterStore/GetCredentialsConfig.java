@@ -14,10 +14,11 @@ public class GetCredentialsConfig {
     private final AwsCredentialsProvider localCredentials;
     private String jwtSecret;
 
-    public GetCredentialsConfig(AwsCredentialsProvider localCredentials) {
-        this.parameterStore = new ParameterStoreService(localCredentials);
-        loadCredentials();
+    public GetCredentialsConfig(AwsCredentialsProvider localCredentials,
+                                ParameterStoreService parameterStore) {
         this.localCredentials = localCredentials;
+        this.parameterStore = parameterStore;
+        loadCredentials();
     }
 
     private void loadCredentials() {

@@ -79,14 +79,11 @@ public class GlobalAccessControl {
         return true;
     }
 
-    public boolean checkIfEntityExistsBeforeRegister(String username, String email) {
-        System.out.println("Username " + username + " email: " + email);
-        boolean userExists = userRepository.findByUsername(username).isPresent() ||
-                userRepository.findByEmail(email).isPresent();
-        boolean employerExist = employerRepository.findByUsername(username).isPresent() ||
-                employerRepository.findByEmail(email).isPresent();
-        boolean staffExists = staffRepository.findByUsername(username).isPresent() ||
-                staffRepository.findByEmail(email).isPresent();
+    public boolean checkIfEntityExistsBeforeRegister(String username) {
+        System.out.println("Username " + username);
+        boolean userExists = userRepository.findByUsername(username).isPresent();
+        boolean employerExist = employerRepository.findByUsername(username).isPresent();
+        boolean staffExists = staffRepository.findByUsername(username).isPresent();
 
         return userExists || employerExist || staffExists;
     }

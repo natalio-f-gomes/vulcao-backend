@@ -31,8 +31,8 @@ public class MFAService {
         MFAModel mfaData = new MFAModel();
         mfaData.setAuthCode(randomCode);
         mfaData.setUserEmail(email);
-        mfaData.setExpirationTime(LocalDateTime.now().plusMinutes(15));
         mfaData.setSendTime(LocalDateTime.now());
+        mfaData.setExpirationTime(LocalDateTime.now().plusMinutes(15));
         mfaRepository.save(mfaData);
         return randomCode;
     }

@@ -9,6 +9,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -18,11 +19,16 @@ public class ParameterStoreService {
     private final SsmClient ssmClient;
 
 
-    public ParameterStoreService(AwsCredentialsProvider credentialsProvider) {
-        this.ssmClient = SsmClient.builder()
+    public ParameterStoreService(AwsCredentialsProvider credentialsProvider,
+                                 @Value("${ssm.endpoint:}") String endpoint) {
+        var builder = SsmClient.builder()
                 .credentialsProvider(credentialsProvider)
-                .region(Region.EU_SOUTH_2) // Replace with your region
-                .build();
+                .region(Region.EU_SOUTH_2);
+
+        if (!endpoint.isBlank()) {                       // note the ! — don't repeat the SES bug
+            builder.endpointOverride(URI.create(endpoint)); // local/test only
+        }
+        this.ssmClient = builder.build();
     }
 
     @Cacheable("parameters")
