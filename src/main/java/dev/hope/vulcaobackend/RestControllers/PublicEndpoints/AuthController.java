@@ -170,38 +170,60 @@ public class AuthController {
     }
 
     @PostMapping("/employer/confirm/register/{mfaCode}")
-    public ResponseEntity<?> registerEmployerConfirm(@PathVariable String mfaCode,
-                                                     @RequestBody EmployerModel newEmployer) {
-        // normalize first — mobile keyboards add spaces, casing varies
-        newEmployer.setUsername(newEmployer.getUsername().trim());
-        newEmployer.setEmail(newEmployer.getEmail().trim().toLowerCase());
-        newEmployer.setFirstName(newEmployer.getFirstName().trim());
-        newEmployer.setLastName(newEmployer.getLastName().trim());
-
-        // validate BEFORE the code is consumed
-        boolean valid = globalAccessControl.isRequestValid(newEmployer.getUsername(), newEmployer.getEmail(),
-                newEmployer.getPassword(), newEmployer.getFirstName(), newEmployer.getLastName())
-                && globalAccessControl.isDataValid(newEmployer.getUsername(), newEmployer.getFirstName(),
-                newEmployer.getLastName(), newEmployer.getPassword());
-        authService.validateEmail(newEmployer.getEmail());
-        authService.validateUsername(newEmployer.getUsername());
-        if (!valid) return ResponseEntity.badRequest().build();
-
-        if (globalAccessControl.checkIfEntityExistsBeforeRegister(newEmployer.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    public ResponseEntity<?> registerEmployerConfirm(@PathVariable String mfaCode, @RequestBody EmployerModel newEmployer){
+        ResponseEntity<?> mfaResponse = mfaService.confirmMFA(newEmployer.getEmail(), mfaCode);
+        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+            return mfaResponse;
         }
+        boolean isRequestValid = globalAccessControl.isRequestValid(
+                newEmployer.getUsername(),
+                newEmployer.getEmail(),
+                newEmployer.getPassword(),
+                newEmployer.getFirstName(),
+                newEmployer.getLastName()
+        );
 
-        // only now verify + consume the code
-        ResponseEntity<?> response = mfaService.confirmMFA(newEmployer.getEmail(), mfaCode);
-        if (!response.getStatusCode().isSameCodeAs(HttpStatus.OK)) return response;
+        boolean isUserDataValid = globalAccessControl.isDataValid(
+                newEmployer.getUsername(),
+                newEmployer.getFirstName(),
+                newEmployer.getLastName(),
+                newEmployer.getPassword()
+        );
 
         try {
-            newEmployer.setId(globalAccessControl.generateNewIdForEmployer());
+            authService.validateEmail(newEmployer.getEmail());
+            authService.validateUsername(newEmployer.getUsername().trim()); // Trim the username
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+
+        if (!isRequestValid || !isUserDataValid) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid user data provided");
+        }
+
+        boolean entityExists = globalAccessControl.checkIfEntityExistsBeforeRegister(
+                newEmployer.getUsername().trim()
+        );
+
+        if(entityExists){
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Username already exists");
+        }
+
+        try {
+            String employerId = globalAccessControl.generateNewIdForEmployer();
+            newEmployer.setId(employerId);
             newEmployer.onCreate();
             employerService.registerEmployer(newEmployer);
+
+            // Only delete MFA after successful registration
+            mfaService.deleteMFA(newEmployer.getEmail());
+
             return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // don't hide as 400
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Registration failed: " + e.getMessage());
         }
     }
 
@@ -272,8 +294,8 @@ public class AuthController {
         }
         boolean isRequestValid = globalAccessControl.isRequestValid(newStaff.getUsername(), newStaff.getEmail(), newStaff.getPassword(), newStaff.getFirstName(), newStaff.getLastName());
         boolean isUserDataValid = globalAccessControl.isDataValid(newStaff.getUsername(), newStaff.getFirstName(), newStaff.getLastName(), newStaff.getPassword());
-            authService.validateEmail(newStaff.getEmail().toString());
-            authService.validateUsername(newStaff.getUsername().toString());
+            authService.validateEmail(newStaff.getEmail());
+            authService.validateUsername(newStaff.getUsername());
             System.out.println("THE USER DATA IS VALID? : " + isUserDataValid);
            if (!isRequestValid || !isUserDataValid) {
               return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

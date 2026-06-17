@@ -37,11 +37,15 @@ public class MFAService {
         return randomCode;
     }
 
-   public ResponseEntity<?> confirmMFA(String email, String code){
-        MFAModel mfa = mfaRepository.findByUserEmail(email).orElseThrow(()-> new RuntimeException("User email not found: " + email));
+
+    public ResponseEntity<?> confirmMFA(String email, String code){
+        MFAModel mfa = mfaRepository.findByUserEmail(email)
+                .orElseThrow(() -> new RuntimeException("User email not found: " + email));
+
         if(!mfa.getAuthCode().equals(code)){
-           return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Wrong MFA CODE.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Wrong MFA CODE.");
         }
+
         LocalDateTime sentTime = mfa.getSendTime();
         LocalDateTime receivedTime = LocalDateTime.now();
         Duration duration = Duration.between(sentTime, receivedTime);
@@ -49,8 +53,12 @@ public class MFAService {
             mfaRepository.deleteMFAData(mfa);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("THIS CODE IS EXPIRED. PLEASE REQUEST A NEW ONE");
         }
-        mfaRepository.deleteMFAData(mfa);
-        return ResponseEntity.ok("Authorized");
 
-   }
+        return ResponseEntity.ok("Authorized");
+    }
+
+    // Add a method to delete after successful registration
+    public void deleteMFA(String email) {
+        mfaRepository.findByUserEmail(email).ifPresent(mfaRepository::deleteMFAData);
+    }
 }
