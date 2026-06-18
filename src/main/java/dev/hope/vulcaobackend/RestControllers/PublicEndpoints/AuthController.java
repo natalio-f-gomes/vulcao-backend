@@ -259,11 +259,8 @@ public class AuthController {
         if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return usernameResponse;
         }
-        boolean usernameExists = employerRepository.findByUsername(username).isPresent();
-        if(!usernameExists){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
-        }
-        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("This user does not exist"));
+        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()->
+                new UsernameNotFoundException("Empresário(a) com este nome the usuário não foin encontrado: '" + username + "'"));
         String randomCode = mfaService.save(employer.getEmail());
         sesService.sendCode(employer.getEmail(), randomCode);
         return ResponseEntity.accepted().build(); //202
@@ -273,7 +270,8 @@ public class AuthController {
     @PostMapping("/employer/confirm/login/{mfaCode}")
     public ResponseEntity<?> loginEmployerConfirm(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         authService.validateUsername(loginRequest.username());
-        EmployerModel employer = employerRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("EMPLOYER WITH THIS USERNAME WAS NOT FOUND "+ loginRequest.username()));
+        EmployerModel employer = employerRepository.findByUsername(loginRequest.username()).orElseThrow(()->
+                new UsernameNotFoundException("Empresário(a) com este nome the usuário não foin encontrado: '" + loginRequest.username() + "'"));
 
         ResponseEntity<?> responseMFA =  mfaService.confirmMFA(employer.getEmail(), mfaCode);
         if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
