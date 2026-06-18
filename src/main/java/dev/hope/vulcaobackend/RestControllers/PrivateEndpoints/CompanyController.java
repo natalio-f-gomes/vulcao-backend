@@ -168,25 +168,38 @@ public class CompanyController {
 
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateBusiness(@RequestBody CompanyDTO updatedBusiness, @PathVariable String id){
-        companyService.updateCompany(id, updatedBusiness);
+        ResponseEntity<?> response = companyService.updateCompany(id, updatedBusiness);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
+
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PutMapping("/update/address/{id}")
     public ResponseEntity<?> updateBusinessAddress(@RequestBody Address newAddress, @PathVariable String id){
-        companyService.updateCompanyAddress(id, newAddress);
+        ResponseEntity<?> response =  companyService.updateCompanyAddress(id, newAddress);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PutMapping("/update/description/{id}")
     public ResponseEntity<?> updateBusinessDescription(@RequestBody CompanyAboutInfo info, @PathVariable String id){
-        companyService.updateCompanyAboutInfo(id, info);
+        ResponseEntity<?> response = companyService.updateCompanyAboutInfo(id, info);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PutMapping("/update/contact/{id}")
     public ResponseEntity<?> updateBusinessContact(@RequestBody CompanyContact newContact, @PathVariable String id){
-        companyService.updateCompanyContact(id, newContact);
+        ResponseEntity<?> response =   companyService.updateCompanyContact(id, newContact);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 

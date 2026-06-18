@@ -326,16 +326,12 @@ public class CompanyService {
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este empresário(a) " + sessionUser +" não existe!"));
         CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("Não existe nenhuma empresa com este ID."));
 
-        ResponseEntity<?> companyName = isCompanyNameValid(company.getName());
-        if(!companyName.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-            return companyName;
-        }
-        ResponseEntity<?> companyDescription = isCompanyDescriptionValid(company.getDescription());
+        ResponseEntity<?> companyDescription = isCompanyDescriptionValid(info.getDescription());
         if(!companyDescription.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return companyDescription;
         }
 
-        ResponseEntity<?> companyTaxId = isCompanyTaxIdValid(company.getTaxIdNumber());
+        ResponseEntity<?> companyTaxId = isCompanyTaxIdValid(info.getTaxIdNumber());
         if(!companyTaxId.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return companyTaxId;
         }
