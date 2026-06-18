@@ -151,18 +151,17 @@ public class CompanyController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerBusiness(@Valid @RequestBody CompanyModel newBusiness){
-        try{
-            String id = generateNewIdForCompany();
-            newBusiness.setId(id);
-            companyService.registerBusiness(newBusiness);
-            imageUploadRequestService.requestCompanyPresignedUrlsFor(newBusiness);
+    public ResponseEntity<?> registerBusiness(@Valid @RequestBody CompanyModel newBusiness) {
+        try {
+            newBusiness.setId(generateNewIdForCompany());
+            ResponseEntity<?> registration = companyService.registerBusiness(newBusiness);
+            if (!registration.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
+                return registration;
+            }
             return imageUploadRequestService.requestCompanyPresignedUrlsFor(newBusiness);
-        }catch (AccessDeniedException e){
-            System.out.println("ERROR: " + e.getClass().getName() + " - " + e.getMessage());
+        } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }catch (ResponseStatusException e){
-            System.out.println(e);
+        } catch (ResponseStatusException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }

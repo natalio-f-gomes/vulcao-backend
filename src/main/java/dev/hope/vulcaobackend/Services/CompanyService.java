@@ -12,6 +12,7 @@ import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,131 +31,184 @@ public class CompanyService {
     @Autowired
     private CompanyMapper companyMapper;
 
-    //    VALIDATION
-    //    private String type;
-    //    private Double revenue;
-    //    private CompanyStatuses status;
 
-    //    private String creatorUsername;
-    public boolean isNameTaxIdAndDescriptionValid(String name, String taxId, String description){
-        if(name == null || name.isEmpty()){throw new RuntimeException("Company Name cannot be null");}
-        String NAME_PATTERN = "^[\\p{L}0-9 !+_.-]+$";
-        String TAX_ID_FORMAT = "^\\d{0,50}$";
-        if(name.length() > 500){
-            throw new IllegalArgumentException("The company name cannot be over 500 characters long");
+    private final static String NAME_PATTERN = "^[\\p{L}0-9 +_.\\-/()&',]{0,500}$";
+
+
+    public ResponseEntity<?> isCompanyAddressValid(Address address){
+        if (address == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Os dados da morada devem ser preenchidos.");
+        }
+
+        debugInput(address.getCity() );
+        debugInput(address.getZone() );
+        debugInput(address.getPostalCode() );
+        debugInput(address.getStreet() );
+
+        // 1. Validação da Zona (Obrigatória)
+        if (address.getZone() == null || address.getZone().isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A zona da morada deve ser preenchida.");
+        }
+
+        if (!address.getZone().matches(NAME_PATTERN)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A zona da morada é inválida. Utilize apenas letras e números.");
+        }
+
+        // 2. Validação do Código Postal (Opcional - Aceita nulo ou vazio)
+        if (address.getPostalCode() != null && !address.getPostalCode().isEmpty()) {
+            if (!address.getPostalCode().matches(NAME_PATTERN)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O código postal é inválido. Utilize apenas letras e números.");
+            }
+        }
+
+        // 3. Validação da Rua (Opcional - Aceita nulo ou vazio)
+        if (address.getStreet() != null && !address.getStreet().isEmpty()) {
+            if (!address.getStreet().matches(NAME_PATTERN)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A rua da morada é inválida. Utilize apenas letras e números.");
+            }
+        }
+
+        // 4. Validação da Cidade (Obrigatória)
+        if (address.getCity() == null || address.getCity().isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A cidade da morada deve ser preenchida.");
+        }
+        if (!address.getCity().matches(NAME_PATTERN)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A cidade da morada é inválida. Utilize apenas letras e números.");
+        }
+
+        return ResponseEntity.accepted().build();
+    }
+
+    public ResponseEntity<?> isCompanyEmailValid(String email){
+
+        System.out.println("EMAIL=[" + email + "] len=" + (email == null ? -1 : email.length())
+                + " atIndex=" + (email == null ? -1 : email.indexOf('@')));
+         Pattern EMAIL = Pattern.compile(
+                "^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*" + // local part (dot-atoms)
+                        "@" +
+                        "(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+" +                   // one or more domain labels
+                        "[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"                            // final label (TLD), dot required
+        );
+        if (email == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("O email não pode estar vazio");
+        int len = email.length();
+        if (len < 3 || len > 254) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O email deve ter entre 3 e 254 caracteres.");
+        }
+        int at = email.indexOf('@');
+        if (at < 0)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O email deve conter '@'.");
+        if (at < 1 || at > 64)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O nome de utilizador antes do '@' deve ter entre 1 e 64 caracteres.");
+        if (len - at - 1 > 255) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O domínio do email após o '@' não pode exceder 255 caracteres.");
+        }
+        if (!EMAIL.matcher(email).matches()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O formato do email é inválido.");
+        }
+        return ResponseEntity.accepted().build();
+    }
+
+    public ResponseEntity<?> isCompanyNameValid(String name){
+        debugInput(name);
+        if(name == null || name.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome da empresa deve ser preenchido.");
         }
         if(!name.matches(NAME_PATTERN)){
-            throw new IllegalArgumentException("THE COMPANY NAME "+ name+ " must be from A-Z a-z 0-9 and can use european characters");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome da empresa é inválido. Utilize apenas letras e números.");
         }
-        if(description.length() > 5000){
-            throw new IllegalArgumentException("THE COMPANY description cannot be over 5000 characters long ");
-        }
-        if(!description.matches(NAME_PATTERN) || description.isEmpty()){
-            throw new IllegalArgumentException("THE COMPANY DESCRIPTION "+ description+ " must be from A-Z a-z 0-9 and can use european characters");
-        }
-        if (taxId != null && !taxId.isEmpty() && !taxId.matches(TAX_ID_FORMAT)) {
-            throw new RuntimeException("COMPANY TAX ID DOES NOT MATCH A VALID FORMAT");
-        }
-        return true;
+        return ResponseEntity.accepted().build();
     }
 
-    public boolean isPhoneNumberAndFaxNumberValid(String phoneNumber, String faxNumber) {
-        if (phoneNumber == null || phoneNumber.isEmpty()) {
-            throw new IllegalArgumentException("COMPANY PHONE NUMBER CANNOT BE NULL");
+    public ResponseEntity<?> isCompanyDescriptionValid(String description){
+        debugInput(description);
+        if(description == null || description.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A descrição da empresa deve ser preenchida.");
         }
-        String CV_PHONE_FORMAT = "^[0-9\\- ]{7,15}$";
-        if (!phoneNumber.matches(CV_PHONE_FORMAT)) {
-            throw new RuntimeException("COMPANY PHONE NUMBER DOES NOT MATCH A VALID CAPE VERDE PHONE NUMBER");
+        if(!description.matches(NAME_PATTERN)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A descrição da empresa é inválida. Utilize apenas letras e números.");
         }
-        String TAX_ID_FORMAT = "^\\d{0,50}$";
-        if(faxNumber.isBlank()){
-            return true;
-        }
-        if (!faxNumber.matches(TAX_ID_FORMAT)) {
-            throw new RuntimeException("COMPANY FAX NUMBER DOES NOT MATCH A VALID FAX NUMBER");
-        }
-        return true;
+        return ResponseEntity.accepted().build();
     }
 
+    public ResponseEntity<?> isCompanyTaxIdValid(String taxId){
+        debugInput(taxId);
+        String TAX_ID_FORMAT = "^[a-zA-Z0-9-]{0,50}$";
 
-    public boolean isEmailValid(String email){
-            if(email == null || email.isEmpty()) { throw  new RuntimeException("Email cannot be null");}
-            if(email.length()< 5 || email.length() > 50) {throw new IllegalArgumentException("Email must be over 5 characters long");}
-            for (int i = 0; i < email.length(); i++) {
-                int cp = email.codePointAt(i);
-                if (Character.isWhitespace(cp) || Character.isSpaceChar(cp)) {
-                    throw new RuntimeException("Email cannot contain any whitespace");
-                }
-            }
-            if(email.contains("script") || email.contains("alert")){
-                throw new RuntimeException("Invalid Email");
-            }
-            String[] emailParts = email.split("@");
-            String username = emailParts[0];
-            String tld = emailParts[1];
-            System.out.println("USERNAME: " + username);
-            System.out.println("TLD: " + tld);
-            if(tld.isEmpty() || username.isEmpty() || tld.charAt(0)=='.' || tld.charAt(0)=='-' || tld.charAt(0)=='=' || !tld.contains(".") || username.charAt(0)=='.' || username.charAt(username.length()-1)=='.'){
-                throw new RuntimeException("Both TLD and username must be specified and they cannot start with a dot(.). The Username cannot end with a .");
-            }
-            String EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-            if(!email.matches(EMAIL_PATTERN)){ throw new RuntimeException("Invalid Email pattern");}
-
-            for(int i=0; i < username.length()-1; i++){
-                if(username.charAt(i)=='.' && username.charAt(i+1)=='.'){
-                    throw new RuntimeException("Email cannot contain 2 consecutive ..");
-                }
-            }
-            // Matches individual emoji characters and complex sequences
-            String emojiRegex = "\\p{IsEmoji}";
-            // OR for broader coverage including newer pictographs:
-            String extendedRegex = "\\p{IsExtended_Pictographic}";
-            if(username.contains(emojiRegex) || username.contains(extendedRegex) || tld.contains(emojiRegex) || tld.contains(extendedRegex)){
-                throw new RuntimeException("Email cannot contain emoji");
-            }
-            return true;
+        if(!taxId.matches(TAX_ID_FORMAT)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O NIF da empresa é inválido. Utilize apenas números e letras (máximo 50 dígitos).");
+        }
+        return ResponseEntity.accepted().build();
     }
 
-    public boolean isAddressValid(Address address){
-        if(address == null){throw new NullPointerException("COMPANY ADDRESS CANNOT BE NULL");}
-        String NAME_PATTERN = "^[\\p{L}0-9 +_.-]*$";
-        if(!address.getIsland().matches(NAME_PATTERN)){throw new IllegalArgumentException("COMPANY ISLAND DOES NOT HAVE A VALID FORMAT");}
-        if(!address.getCity().matches(NAME_PATTERN)){throw new IllegalArgumentException("COMPANY city DOES NOT HAVE A VALID FORMAT");}
-        if(!address.getZone().matches(NAME_PATTERN)){throw new IllegalArgumentException("COMPANY zone DOES NOT HAVE A VALID FORMAT");}
-        if(!address.getStreet().matches(NAME_PATTERN)){throw new IllegalArgumentException("COMPANY street DOES NOT HAVE A VALID FORMAT");}
-        if(!address.getPostalCode().matches(NAME_PATTERN)){throw new IllegalArgumentException("COMPANY postal code DOES NOT HAVE A VALID FORMAT");}
-        return true;
+    public ResponseEntity<?> isCompanyPhoneNumberValid(String phoneNumber){
+        debugInput(phoneNumber);
+        String CV_PHONE_FORMAT = "^[+0-9\\- ]{7,15}$";
+        if(phoneNumber == null || phoneNumber.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O telefone da empresa deve ser preenchido.");
+        }
+        if(!phoneNumber.matches(CV_PHONE_FORMAT)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O telefone da empresa é inválido. Utilize apenas números, espaços ou hífens (entre 7 e 15 dígitos).");
+        }
+        return ResponseEntity.accepted().build();
     }
-    public boolean isCompanyStatusValid(CompanyStatuses status){
-        if(status == null){throw new IllegalArgumentException("COMPANY STATUS CANNOT BE NULL");}
-        return true;
+
+    public ResponseEntity<?> isCompanyFaxValid(String fax){
+        debugInput(fax);
+        String FAX_FORMAT = "^\\d{0,50}$";
+        if(!fax.matches(FAX_FORMAT)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O fax da empresa é inválido. Utilize apenas números (máximo 50 dígitos).");
+        }
+        return ResponseEntity.accepted().build();
+    }
+
+    public void debugInput(String field){
+        System.out.println(field.toUpperCase() + "=[" + field + "] len=" + (field == null ? -1 : field.length()));
     }
 
 
-    public boolean isCompanyValid(CompanyModel company){
-        return isNameTaxIdAndDescriptionValid(company.getPhoneNumber(), company.getTaxIdNumber(), company.getDescription()) &&
-                isPhoneNumberAndFaxNumberValid(company.getPhoneNumber(), company.getFaxNumber()) &&
-                isAddressValid(company.getAddress()) && isEmailValid(company.getEmail()) && isCompanyStatusValid(company.getStatus());
+    public ResponseEntity<?> isCompanyValid(CompanyModel company){
+        ResponseEntity<?> companyName = isCompanyNameValid(company.getName());
+        if(!companyName.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyName;
+        }
+        ResponseEntity<?> companyDescription = isCompanyDescriptionValid(company.getDescription());
+        if(!companyDescription.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyDescription;
+        }
+
+        ResponseEntity<?> companyTaxId = isCompanyTaxIdValid(company.getTaxIdNumber());
+        if(!companyTaxId.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyTaxId;
+        }
+
+        ResponseEntity<?> companyFax = isCompanyFaxValid(company.getFaxNumber());
+        if(!companyFax.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyFax;
+        }
+
+        ResponseEntity<?> companyPhoneNumber = isCompanyPhoneNumberValid(company.getPhoneNumber());
+        if(!companyPhoneNumber.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyPhoneNumber;
+        }
+
+        ResponseEntity<?> companyEmail = isCompanyEmailValid(company.getEmail());
+        if(!companyEmail.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyEmail;
+        }
+
+        return ResponseEntity.accepted().build();
     }
 
     public CompanyDTO findCompanyById(String companyID){
         CompanyModel company = companyRepository.findById(companyID)
-                .orElseThrow (()  -> new RuntimeException("Company " + companyID + " not found"));
+                .orElseThrow (()  -> new RuntimeException("A empresa com o ID " + companyID + " não foi encontrada. Esta empresa poderá ter sido eliminada."));
         return companyMapper.transformData(company);
     }
-
-    public CompanyDTO findCompanyDashboard(String companyID){
-        if(companyID==null){throw new NullPointerException("Access Denied: User not authorized");}
-        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        CompanyModel company = companyRepository.findById(companyID).orElseThrow(()-> new RuntimeException("A company with this Id could not be found"));
-        boolean isEmployerPresent = employerRepository.findByUsername(sessionUser).isPresent();
-//      boolean isStaffPresent = staffRepository.findByUsername(sessionUser).isPresent();
-//      if(!isEmployerPresent && !isStaffPresent){
-//          throw new UsernameNotFoundException("Access Denied: User not authorized");
-//       }
-       return companyMapper.transformData(company);
-    }
-
 
 
     public List<CompanyDTO> findCompanyByCreatorUsername(String creator){
@@ -192,113 +247,136 @@ public class CompanyService {
 
     }
 
-    public void updateCompany(String id, CompanyDTO updatedCompany){
+    public ResponseEntity<?> updateCompany(String id, CompanyDTO updatedCompany){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
-        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este(a) empresário(a) não existe: " + sessionUser));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A empresa com o ID " + id + " não foi encontrada. Esta empresa poderá ter sido eliminada."));
         if(!company.getName().equals(updatedCompany.getName())){
             boolean companyWithTheSameName = companyRepository.findByName(updatedCompany.getName()).isPresent();
             if(companyWithTheSameName){
-                throw new RuntimeException("The new company name is already taken.");
+              return ResponseEntity.status(HttpStatus.CONFLICT).body("Já existe uma empresa com este nome.");
             }
         }
-        try {
-            company.setName(updatedCompany.getName());
-            company.setCategory(updatedCompany.getCategory());
-            company.setTaxIdNumber(updatedCompany.getTaxIdNumber());
-            company.setDescription(updatedCompany.getDescription());
-            company.setPhoneNumber(updatedCompany.getPhoneNumber());
-            company.setFaxNumber(updatedCompany.getFaxNumber());
-            company.setEmail(updatedCompany.getEmail());
-            company.setAddress(updatedCompany.getAddress());
-            company.setStatus(updatedCompany.getStatus());
-            company.onUpdate();
-            companyRepository.update(company);
+
+        company.setName(updatedCompany.getName());
+        company.setCategory(updatedCompany.getCategory());
+        company.setTaxIdNumber(updatedCompany.getTaxIdNumber());
+        company.setDescription(updatedCompany.getDescription());
+        company.setPhoneNumber(updatedCompany.getPhoneNumber());
+        company.setFaxNumber(updatedCompany.getFaxNumber());
+        company.setEmail(updatedCompany.getEmail());
+        company.setAddress(updatedCompany.getAddress());
+        company.setStatus(updatedCompany.getStatus());
+        company.onUpdate();
+        companyRepository.update(company);
+        return ResponseEntity.accepted().build();
         }
-        catch(Exception e){
-            System.out.println(e);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot update this company because a different company contains the same email or tax id");
+
+
+
+    public ResponseEntity<?> updateCompanyAddress(String id, Address newAddress){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este empresário(a) " + sessionUser +" não existe!"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("Não existe nenhuma empresa com este ID."));
+        ResponseEntity<?> valid = isCompanyAddressValid(newAddress);
+        if(!valid.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return valid;
         }
+
+        company.setAddress(newAddress);
+        company.onUpdate();
+        companyRepository.update(company);
+
+        return ResponseEntity.accepted().build();
     }
 
-    public void updateCompanyAddress(String id, Address newAddress){
+    public ResponseEntity<?> updateCompanyContact(String id, CompanyContact contact){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
-        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
-        isAddressValid(newAddress);
-        try {
-            company.setAddress(newAddress);
-            company.onUpdate();
-            companyRepository.update(company);
-        }
-        catch(Exception e){
-            System.out.println(e);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot update this company because a different company contains the same email or tax id");
-        }
-    }
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este empresário(a) " + sessionUser +" não existe!"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("Não existe nenhuma empresa com este ID."));
 
-    public void updateCompanyContact(String id, CompanyContact contact){
-        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
-        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
-        isPhoneNumberAndFaxNumberValid(contact.getPhoneNumber(), contact.getFaxNumber() );
-        isEmailValid(contact.getEmail());
-        isNameTaxIdAndDescriptionValid(company.getName(), contact.getTaxIdNumber(), company.getDescription());
-        try {
-            company.setEmail(contact.getEmail());
-            company.setTaxIdNumber(contact.getTaxIdNumber());
-            company.setFaxNumber(contact.getFaxNumber());
-            company.setPhoneNumber(contact.getPhoneNumber());
-            company.onUpdate();
-            companyRepository.update(company);
+
+        ResponseEntity<?> companyFax = isCompanyFaxValid(contact.getFaxNumber());
+        if(!companyFax.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyFax;
         }
-        catch(Exception e){
-            System.out.println(e);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot update this company because a different company contains the same email or tax id");
+
+        ResponseEntity<?> companyPhoneNumber = isCompanyPhoneNumberValid(contact.getPhoneNumber());
+        if(!companyPhoneNumber.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyPhoneNumber;
         }
+
+        ResponseEntity<?> companyEmail = isCompanyEmailValid(contact.getEmail());
+        if(!companyEmail.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyEmail;
+        }
+
+        company.setEmail(contact.getEmail());
+        company.setFaxNumber(contact.getFaxNumber());
+        company.setPhoneNumber(contact.getPhoneNumber());
+        company.onUpdate();
+        companyRepository.update(company);
+        return ResponseEntity.accepted().build();
+
     }
 
 
-    public void updateCompanyAboutInfo(String id, CompanyAboutInfo info){
+    public ResponseEntity<?> updateCompanyAboutInfo(String id, CompanyAboutInfo info){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("This executive does not exists"));
-        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("A company wiht this id does not exist"));
-        isNameTaxIdAndDescriptionValid(company.getName(), company.getTaxIdNumber(), info.getDescription());
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este empresário(a) " + sessionUser +" não existe!"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("Não existe nenhuma empresa com este ID."));
+
+        ResponseEntity<?> companyName = isCompanyNameValid(company.getName());
+        if(!companyName.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyName;
+        }
+        ResponseEntity<?> companyDescription = isCompanyDescriptionValid(company.getDescription());
+        if(!companyDescription.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyDescription;
+        }
+
+        ResponseEntity<?> companyTaxId = isCompanyTaxIdValid(company.getTaxIdNumber());
+        if(!companyTaxId.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyTaxId;
+        }
         company.setDescription(info.getDescription());
         company.setStatus(info.getStatus());
         company.onUpdate();
         companyRepository.update(company);
+        return ResponseEntity.accepted().build();
     }
 
-    public boolean doesTheCompanyAlreadyExist(CompanyModel newCompany){
+    public ResponseEntity<?> doesTheCompanyAlreadyExist(CompanyModel newCompany){
         if(companyRepository.findByName(newCompany.getName()).isPresent()){
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A company with this name already Exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Já existe uma empresa com este nome.");
         }
-        return false;
+        return ResponseEntity.accepted().build();
     }
 
-    public void registerBusiness(CompanyModel newBusiness) throws AccessDeniedException {
+    public ResponseEntity<?> registerBusiness(CompanyModel newBusiness) throws AccessDeniedException {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         System.out.println("DEBUG: ATTEMPT TO REGISTER A COMPANY: Session User " + sessionUser);
-        doesTheCompanyAlreadyExist(newBusiness);
-        System.out.println("DEBUG: ATTEMPT TO REGISTER A COMPANY:THE COMPANY EXISTS " +   doesTheCompanyAlreadyExist(newBusiness));
-        boolean response =  isCompanyValid(newBusiness);
-        System.out.println("DEBUG: ATTEMPT TO REGISTER A COMPANY: IS COMPANY VALID" +  response);
-        if(!response){ throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The company email or taxID are not valid");}
+        ResponseEntity<?> companyExists = doesTheCompanyAlreadyExist(newBusiness);
+        if(!companyExists.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            System.out.println("DEBUG: ATTEMPT TO REGISTER A COMPANY:THE COMPANY EXISTS WITH THIS NAME");
+            return companyExists;
+        }
+        ResponseEntity<?> response =  isCompanyValid(newBusiness);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
+
         EmployerModel creator = employerRepository.findByUsername(sessionUser).orElseThrow(()
                 -> new UsernameNotFoundException("Employer " + sessionUser + " not found"));
         System.out.println("DEBUG:: Register Company Method-> Username: " + creator.getUsername() );
         newBusiness.setCreatorUsername(creator.getUsername());
         newBusiness.onCreate();
-        try{
-            companyRepository.save(newBusiness);
-            creator.getCompaniesRegistered().add(companyMapper.transformData(newBusiness));
-            employerRepository.update(creator);
-        }catch (Exception e){
-            System.out.println("Exception when trying to register the compay "+e);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "A company with the same email or Tax Id already exists");
-        }
 
+        companyRepository.save(newBusiness);
+        creator.getCompaniesRegistered().add(companyMapper.transformData(newBusiness));
+        employerRepository.update(creator);
+
+        return ResponseEntity.accepted().build();
     }
 
 }

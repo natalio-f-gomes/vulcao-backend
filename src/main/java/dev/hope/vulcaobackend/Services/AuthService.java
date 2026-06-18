@@ -51,7 +51,7 @@ public class AuthService {
             "admin", "administrator", "root", "system", "support", "anonymous",
             "null", "undefined", "api", "postgres", "superuser", "guest"
     ));
-    public ResponseEntity<?> validateEmail(String email){
+    public static ResponseEntity<?> validateEmail(String email){
         if(email == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("O email não pode estar vazio");

@@ -37,23 +37,16 @@ public class EmployerController {
     //Update User profile
     @PutMapping("/update/{username}/profile")
     public ResponseEntity<?> updatePersonalInfo(@PathVariable String username, @RequestBody UserFullName updatedUser)  {
-        try{
-            employerService.updateEmployerProfile(username, updatedUser);
-            return ResponseEntity.status(HttpStatus.OK).build();
-        }catch (AccessDeniedException e){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
+    employerService.updateEmployerProfile(username, updatedUser);
+    return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PutMapping("/update/{username}/address")
-    public ResponseEntity<?> updateUserAddress(@PathVariable String username, @RequestBody Address newAddress) throws AccessDeniedException {
-        try{
-            employerService.updateEmployerAddress(username, newAddress);
-            return ResponseEntity.status(HttpStatus.OK).build();
-        }catch (AccessDeniedException e){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+    public ResponseEntity<?> updateUserAddress(@PathVariable String username, @RequestBody Address newAddress) {
+
+    employerService.updateEmployerAddress(username, newAddress);
+    return ResponseEntity.status(HttpStatus.OK).build();
+
     }
 
     @PutMapping("/update/{employerId}/credentials")
@@ -68,13 +61,10 @@ public class EmployerController {
     }
 
     @PutMapping("/update/{username}/contact")
-    public ResponseEntity<?>  updateUserContact(@PathVariable String username, @RequestBody UserContactData updatedUser) throws AccessDeniedException {
-        try{
+    public ResponseEntity<?>  updateContact(@PathVariable String username, @RequestBody UserContactData updatedUser) {
             employerService.updateEmployerContact(username, updatedUser);
             return ResponseEntity.status(HttpStatus.OK).build();
-        }catch (AccessDeniedException e){
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+
     }
 
 

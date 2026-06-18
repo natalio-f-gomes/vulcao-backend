@@ -3,6 +3,10 @@ package dev.hope.vulcaobackend.AuthTesting;
 
 import dev.hope.vulcaobackend.CleanTable;
 import dev.hope.vulcaobackend.RequestHandler;
+import dev.hope.vulcaobackend.TestData.CompanyTestData;
+import dev.hope.vulcaobackend.TestData.InvalidEmployerTestData;
+import dev.hope.vulcaobackend.TestData.ValidEmployerTestData;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +25,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,7 +43,10 @@ public class TestEmployerAuth extends CleanTable {
 
     private RequestHandler requestHandler;
 
-    private EmployerTestData employerTestData = new EmployerTestData();
+    private ValidEmployerTestData employerTestData = new ValidEmployerTestData();
+    private InvalidEmployerTestData invalidEmployerTestData =new InvalidEmployerTestData();
+
+    private CompanyTestData companyTestData = new CompanyTestData();
 
     @BeforeEach
     void setUp() {
@@ -64,20 +72,62 @@ public class TestEmployerAuth extends CleanTable {
             String email = employer.get("email").toString();
             String username = employer.get("username").toString();
             String password = employer.get("password").toString();
-            registerEmployer(email, username, employer);
+            registerEmployer(email, username, employer, 202, 201);
             JSONObject employerLoginData = new JSONObject();
             employerLoginData.put("username", username);
             employerLoginData.put("password", password);
-            loginEmployer(email, username, employerLoginData);
+            String token = loginEmployer(email, username, employerLoginData,202, 200);
         }
 
     }
 
-    public void registerEmployer(String employerEmail, String username, JSONObject employer) throws InterruptedException, IOException {
-        System.out.println("Sending registration request...");
-        requestHandler.employerRegisterRequest(employerEmail, username, 202, port);
+    @Test
+    void testCompanyRegistrationWithValidData() throws JSONException, IOException, InterruptedException {
+        System.out.println("=== Starting test ===");
+        JSONObject employer1 = new JSONObject().put("username", "nataliogomes")
+                .put("firstName", "Natalio").put("lastName", "Gomes")
+                .put("email", "natalio@gmail.com").put("password", "password");
+        List<JSONObject> companies = companyTestData.validCompanies();
+        String email = employer1.get("email").toString();
+        String username = employer1.get("username").toString();
+        registerEmployer(email, username, employer1, 202, 201);
+        JSONObject employerLoginData = new JSONObject();
+        employerLoginData.put("username", username);
+        employerLoginData.put("password", "password");
+        String token = loginEmployer(email, username, employerLoginData,202, 200);
+        for(JSONObject company: companies){
+            company.remove("creatorUsername");
+            company.put("creatorUsername", username);
+            company.put("imagesMetadata", new JSONArray());
+            requestHandler.companyRegisterRequest(token, company.toString(), 204, port);
+        }
+    }
 
-        Thread.sleep(2000);
+    //@Test TODO later
+    void testEmployerAuthWithInvalidData() throws JSONException, IOException, InterruptedException {
+        System.out.println("=== Starting test ===");
+
+        List<JSONObject> employerTestingData = invalidEmployerTestData.invalidEmployers();
+        for(JSONObject employer: employerTestingData){
+            try{
+                String email = employer.get("email").toString();
+                String username = employer.get("username").toString();
+                String password = employer.get("password").toString();
+                requestHandler.employerRegisterRequest(email, username, 400, port);
+                requestHandler.employerLoginRequest(username, 400, port);
+            }catch (JSONException e){
+                //
+            }
+
+        }
+
+    }
+
+    public void registerEmployer(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {
+        System.out.println("Sending registration request...");
+        requestHandler.employerRegisterRequest(employerEmail, username, expectedRequestStatus, port);
+
+        Thread.sleep(250);
         System.out.println("After sleep, checking /store...");
 
         HttpClient client = HttpClient.newHttpClient();
@@ -131,7 +181,7 @@ public class TestEmployerAuth extends CleanTable {
             if (code == null) {
                 attempt++;
                 System.out.println("Code not found, waiting 1 second...");
-                Thread.sleep(500);
+                Thread.sleep(250);
             }
         }
 
@@ -141,14 +191,14 @@ public class TestEmployerAuth extends CleanTable {
         // Change this to fail the test if no code found
         assertNotNull(code, "No verification code found in any email after " + maxAttempts + " attempts");
 
-        requestHandler.employerRegisterConfirm(code, employer.toString(), 201, port);
+        requestHandler.employerRegisterConfirm(code, employer.toString(), expectedConfirmStatus, port);
     }
 
-    public void loginEmployer(String employerEmail, String username, JSONObject employer) throws InterruptedException, IOException {
+    public String loginEmployer(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {
         System.out.println("Sending login request...");
-        requestHandler.employerLoginRequest(username, 202, port);
+        requestHandler.employerLoginRequest(username, expectedRequestStatus, port);
 
-        Thread.sleep(500);
+        Thread.sleep(250);
         System.out.println("After sleep, checking /store...");
 
         HttpClient client = HttpClient.newHttpClient();
@@ -204,7 +254,7 @@ public class TestEmployerAuth extends CleanTable {
             if (code == null) {
                 attempt++;
                 System.out.println("Code not found, waiting 1 second...");
-                Thread.sleep(1000);
+                Thread.sleep(250);
             }
         }
 
@@ -213,8 +263,10 @@ public class TestEmployerAuth extends CleanTable {
 
         assertNotNull(code, "No verification code found in any email after " + maxAttempts + " attempts");
 
-        requestHandler.employerLoginConfirm(code, employer.toString(), 200, port);
+        return requestHandler.employerLoginConfirm(code, employer.toString(), expectedConfirmStatus, port);
     }
+
+
 
 
 }

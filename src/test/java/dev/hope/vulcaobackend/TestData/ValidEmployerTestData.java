@@ -1,4 +1,4 @@
-package dev.hope.vulcaobackend.AuthTesting;
+package dev.hope.vulcaobackend.TestData;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,9 +16,9 @@ import java.util.List;
  *
  * Fields per object: username, lastName, firstName, email, password.
  */
-public  class EmployerTestData {
+public  class ValidEmployerTestData {
 
-    public EmployerTestData() {
+    public ValidEmployerTestData() {
     }
 
     public List<JSONObject> validEmployers() throws JSONException {

@@ -14,5 +14,4 @@ public class CompanyContact {
     private String phoneNumber;
     private String email;
     private String faxNumber;
-    private String taxIdNumber;
 }

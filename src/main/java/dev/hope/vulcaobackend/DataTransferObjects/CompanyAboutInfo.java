@@ -13,4 +13,5 @@ import lombok.Setter;
 public class CompanyAboutInfo {
     private String description;
     private CompanyStatuses status;
+    private String taxIdNumber;
 }

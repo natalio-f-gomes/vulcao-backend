@@ -14,6 +14,7 @@ import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -78,17 +79,10 @@ public class EmployerService {
 //                .collect(Collectors.toList());
 //    }
 
-    public EmployerModel checkEmployerPermissions(String userId) throws AccessDeniedException {
+
+    public void updateEmployerProfile(String username, UserFullName employerName) {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        EmployerModel employer = employerRepository.findById(userId).orElseThrow(() -> new
-                UsernameNotFoundException("Employer with id " + userId + " does not exist"));
-        if(!sessionUser.equals(employer.getUsername())){
-            throw new AccessDeniedException("YOU DO NOT HAVE PERMISSIONS TO UPDATE THIS PROFILE");
-        }
-        return employer;
-    }
-    public void updateEmployerProfile(String username, UserFullName employerName) throws AccessDeniedException {
-        EmployerModel employer = checkEmployerPermissions(username);
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este(a) empresário(a) não existe: " + sessionUser));
         employer.setFirstName(employerName.getFirstName());
         employer.setLastName(employerName.getLastName());
         employer.onUpdate();
@@ -96,27 +90,31 @@ public class EmployerService {
 
     }
 
-    public void updateEmployerAddress(String username, Address address) throws AccessDeniedException {
-        EmployerModel employer = checkEmployerPermissions(username);
+    public void updateEmployerAddress(String username, Address address) {
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este(a) empresário(a) não existe: " + sessionUser));
         employer.setAddress(address);
         employer.onUpdate();
         employerRepository.update(employer);
     }
 
-    public void updateEmployerCredentials(String userId, UserCredentials credentials) throws AccessDeniedException {
-        EmployerModel employer = checkEmployerPermissions(userId);
+    public ResponseEntity<?> updateEmployerCredentials(String userId, UserCredentials credentials) throws AccessDeniedException {
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este(a) empresário(a) não existe: " + sessionUser));
         authService.validateUsername(credentials.getUsername());
         if(credentials.getPassword().isBlank() || credentials.getUsername().isBlank() || credentials.getPassword().length() < 8 || credentials.getUsername().length() < 8){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A palavra-passe deve ter entre 8 e 50 caracteres.");
         }
         employer.setUsername(credentials.getUsername());
         employer.setPassword(passwordEncoder.encode(credentials.getPassword()));
         employer.onUpdate();
         employerRepository.update(employer);
+        return ResponseEntity.accepted().build();
     }
 
-    public void updateEmployerContact(String username, UserContactData contactData) throws AccessDeniedException {
-        EmployerModel employer = checkEmployerPermissions(username);
+    public void updateEmployerContact(String username, UserContactData contactData) {
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este(a) empresário(a) não existe: " + sessionUser));
         employer.setEmail(contactData.getEmail());
         employer.setPhoneNumber(contactData.getPhoneNumber());
         employer.onUpdate();

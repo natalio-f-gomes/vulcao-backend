@@ -1,5 +1,6 @@
 package dev.hope.vulcaobackend.Models.Common;
 
+import dev.hope.vulcaobackend.Models.Properties.CvIslands;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 @DynamoDbBean
 @NoArgsConstructor
 public class Address {
-    private String island;
+    private CvIslands island;
     private String city;
     private String zone;
     private String street;
