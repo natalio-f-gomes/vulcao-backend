@@ -30,27 +30,6 @@ public class ProductModel extends BaseOfferingModel {
     private ProductType productType;
 
 
-
-    public String getSummarization() {
-        return "Product {" +
-                "id='" + id + '\'' +
-                "CreatedAt='" + createdAt + '\'' +
-                "CreatedAt='" + updatedAt + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", pricePerUnit=" + pricePerUnit +
-                ", unitType=" + unitType +
-                ", currency=" + currency +
-                ", stock=" + stock +
-                ", creatorUsername='" + creatorUsername + '\'' +
-                ", creatorId='" + creatorId + '\'' +
-                ", updatedBy='" + updatedBy + '\'' +
-                ", companyId='" + companyId + '\'' +
-                ", companyName='" + companyName + '\'' +
-                '}';
-    }
-
-
     //private ArrayList<ReviewModel> reviews = new ArrayList<>();
 
 }

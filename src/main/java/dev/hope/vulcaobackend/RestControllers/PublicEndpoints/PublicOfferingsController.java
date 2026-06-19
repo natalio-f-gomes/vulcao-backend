@@ -44,10 +44,7 @@ public class PublicOfferingsController {
         return ResponseEntity.ok(productService.findCreatorProductsByCreatorId(creatorId));
     }
 
-    @GetMapping("/product/creator/username/{username}")
-    public ResponseEntity<List<ProductDTO>> getProductsByCreatorUsername(@PathVariable String username) {
-        return ResponseEntity.ok(productService.findProductsByCreatorName(username));
-    }
+
 
     @GetMapping("/product/get/{id}")
     public ResponseEntity<ProductDTO> getProductById(@PathVariable String id) {

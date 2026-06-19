@@ -38,15 +38,7 @@ public class ProductRepository {
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("creator-name-index")
-                                    .projection(p -> p.projectionType(ProjectionType.ALL))
-                                    .build(),
-                            EnhancedGlobalSecondaryIndex.builder()
                                     .indexName("company-id-index")
-                                    .projection(p -> p.projectionType(ProjectionType.ALL))
-                                    .build(),
-                            EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("company-name-index")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
@@ -103,13 +95,7 @@ public class ProductRepository {
         }
     }
 
-    public List<ProductModel> findByCreatorUsername(String creatorName) {
-        return productTable.index("creator-name-index")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(creatorName)))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .toList();
-    }
+
     public List<ProductModel> findByCreatorId(String id) {
         return productTable.index("creator-id-index")
                 .query(QueryConditional.keyEqualTo(k -> k.partitionValue(id)))
@@ -132,13 +118,6 @@ public class ProductRepository {
     }
 
 
-    public List<ProductModel> findByCompanyName(String companyName) {
-        return productTable.index("company-name-index")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(companyName)))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .toList();
-    }
 
     public List<ProductModel> findByCompanyId(String companyId) {
         return productTable.index("company-id-index")

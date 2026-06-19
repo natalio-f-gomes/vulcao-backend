@@ -16,6 +16,8 @@ import dev.hope.vulcaobackend.Services.GlobalAccessControl;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -39,13 +41,12 @@ public class ProductService {
 
 
 
-    public void employerSaveProduct(ProductModel newProduct, String sessionUser, HttpServletRequest request){
+    public ResponseEntity<?> employerSaveProduct(ProductModel newProduct, String sessionUser, HttpServletRequest request){
         System.out.println("EMPLOYER SAVE PRODUCT SERVICE REACHED "+ newProduct.getName());
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no employer with this name"));
         CompanyModel company = companyRepository.findById(newProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
 
-        newProduct.setCompanyName(company.getName());
-        newProduct.setCreatorUsername(employer.getUsername());
+
         newProduct.setCreatorId(employer.getId());
         newProduct.onCreate();
         newProduct.setUpdatedBy(employer.getUsername());
@@ -53,18 +54,20 @@ public class ProductService {
         System.out.println("DEBUG CREATED_AT: " + newProduct.getCreatedAt());
         System.out.println("DEBUG UPDATED_AT: " + newProduct.getUpdatedAt());
 
-        globalAccessControl.isProductValid(newProduct);
+        ResponseEntity<?> response =   globalAccessControl.isProductValid(newProduct);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         productRepository.save(newProduct);
+        return ResponseEntity.accepted().build();
     }
 
-    public void staffSaveProduct(ProductModel newProduct, String sessionUser, HttpServletRequest request){
+    public ResponseEntity<?> staffSaveProduct(ProductModel newProduct, String sessionUser, HttpServletRequest request){
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no Staff with this name"));
         if(!staff.getAssignedPermissions().contains(Permissions.ADD_PRODUCT)){
             throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
         }
         CompanyModel company = companyRepository.findById(newProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
-        newProduct.setCompanyName(company.getName());
-        newProduct.setCreatorUsername(staff.getUsername());
         newProduct.setCreatorId(staff.getId());
         newProduct.setCompanyId(company.getId());
         newProduct.onCreate();
@@ -72,12 +75,16 @@ public class ProductService {
         System.out.println("DEBUG ID: " + newProduct.getId());
         System.out.println("DEBUG CREATED_AT: " + newProduct.getCreatedAt());
         System.out.println("DEBUG UPDATED_AT: " + newProduct.getUpdatedAt());
-        globalAccessControl.isProductValid(newProduct);
+        ResponseEntity<?> response =   globalAccessControl.isProductValid(newProduct);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         productRepository.save(newProduct);
+        return ResponseEntity.accepted().build();
 
     }
 
-    public void employerUpdateProduct(String id, ProductModel updatedProduct, String sessionUser, HttpServletRequest request){
+    public  ResponseEntity<?>  employerUpdateProduct(String id, ProductModel updatedProduct, String sessionUser, HttpServletRequest request){
         if(!id.equals(updatedProduct.getId())){
             throw new RuntimeException("PRODUCT WITH ID DOES NOT MATCH THE ID IN THE PARAMETER: " + id);
         }
@@ -85,11 +92,14 @@ public class ProductService {
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("THERE IS NO PRODUCT WITH THIS ID"));
         EmployerModel employer = employerRepository.findByUsername(sessionUser)
                 .orElseThrow(() -> new UsernameNotFoundException("Employer not found"));
+
+        ResponseEntity<?> response =   globalAccessControl.isProductValid(updatedProduct);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         ProductModel productUpdated =  updateProduct(product, updatedProduct, employer.getUsername());
-        globalAccessControl.isProductValid(product);
-
         productRepository.update(productUpdated);
-
+        return ResponseEntity.accepted().build();
     }
 
     public ProductModel updateProduct(ProductModel product, ProductModel updatedProduct, String username){
@@ -106,19 +116,24 @@ public class ProductService {
         return product;
     }
 
-    public void staffUpdateProduct(String id, ProductModel updatedProduct, String sessionUser, HttpServletRequest request){
+    public ResponseEntity<?>   staffUpdateProduct(String id, ProductModel updatedProduct, String sessionUser, HttpServletRequest request){
         StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no Staff with this name"));
         if(!staff.getAssignedPermissions().contains(Permissions.UPDATE_PRODUCT)){
             throw new AccessDeniedException("STAFF " + staff.getUsername() + " Does not the the permissions to save produts");
         }
         CompanyModel company = companyRepository.findById(updatedProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("THERE IS NO PRODUCT WITH THIS ID"));
-        globalAccessControl.isProductValid(product);
+        ResponseEntity<?> response =   globalAccessControl.isProductValid(updatedProduct);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         ProductModel productUpdated =  updateProduct(product, updatedProduct, staff.getUsername());
 
         product.onUpdate();
         productRepository.update(productUpdated);
+        return ResponseEntity.accepted().build();
     }
+
 
     public void employerDeleteProduct(String productId, String sessionUser, HttpServletRequest request){
         EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("There is no employer with this name"));
@@ -153,9 +168,7 @@ public class ProductService {
         return productRepository.findByCreatorId(creatorId).stream().map(offeringsMapper::transformToProductDTO).collect(Collectors.toList());
     }
 
-    public List<ProductDTO> findProductsByCreatorName(String creatorUsername){
-        return productRepository.findByCreatorUsername(creatorUsername).stream().map(offeringsMapper::transformToProductDTO).collect(Collectors.toList());
-    }
+
 
     public ProductDTO findProductsById(String id){
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("There is no product with this id: "+ id));

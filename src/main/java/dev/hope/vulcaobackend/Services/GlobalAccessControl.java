@@ -45,6 +45,8 @@ public class GlobalAccessControl {
 
     @Autowired
     private CartItemRepository cartItemRepository;
+    @Autowired
+    private CompanyService companyService;
 
     /** allowed: Unicode letters, digits, space, plus, underscore, period, comma, colon, semicolon, ampersand, percent, slash, parentheses, hyphen*/
     public boolean isFieldValid(String field){
@@ -68,18 +70,39 @@ public class GlobalAccessControl {
 
 
 
-    public boolean isProductValid(ProductModel product){
-        if(product.getName().isBlank() || product.getName().length() > 200){throw new RuntimeException("Product name cannot be over 50 chars long nor be empty");}
-        if(product.getDescription().isBlank() || product.getDescription().length() > 2500){throw new RuntimeException("Product description cannot be over 20000 chars long nor be empty");}
-        if(product.getPricePerUnit() == null || product.getPricePerUnit() < 0){throw new RuntimeException("Product Price cannot be null");}
-        if(product.getUnitType() == null || product.getCurrency() == null || product.getStock() == null ||product.getStock() <0 )
-        {throw new RuntimeException("Product Unit type, currency, and stock cannot be null");}
-        if(product.getExpirationDate() == null) {throw new RuntimeException("Product Unit type, currency, and stock cannot be null");}
-        if(product.getCompanyName().isBlank() || product.getCompanyId().isBlank()){throw new RuntimeException("The product MUST BE ASSOCIATED WITHA  COMPANY");}
-        isFieldValid(product.getName());
-        isFieldValid(product.getDescription());
-        log("PRODUCT " + product.getName() + " is Valid");
-        return true;
+    public ResponseEntity<?> isProductValid(ProductModel product) {
+        if (product.getName() == null || product.getName().isBlank() || product.getName().length() > 200) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O nome do produto não pode estar vazio nem ultrapassar os 200 caracteres.");
+        }
+        ResponseEntity<?> response = companyService.isCompanyDescriptionValid(product.getName());
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O nome do produto é invalida!");
+        }
+        if (product.getDescription() == null || product.getDescription().isBlank() || product.getDescription().length() > 2500) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A descrição do produto não pode estar vazia nem ultrapassar os 2500 caracteres.");
+        }
+        if(!companyService.isCompanyDescriptionValid(product.getDescription()).getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A descrição do produto é invalida");
+        }
+        if (product.getPricePerUnit() == null || product.getPricePerUnit() < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O preço do produto não pode ser nulo nem negativo.");
+        }
+        if (product.getStock() == null ||product.getStock() < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O stock do produto não podem ser nulos, negativos ou conter letras .");
+        }
+
+
+        // Se passou todas as validações de barreira:
+        log("PRODUTO " + product.getName() + " é Válido");
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body("O produto é válido e foi aceite com sucesso.");
     }
 
     public boolean checkIfEntityExistsBeforeRegister(String username) {

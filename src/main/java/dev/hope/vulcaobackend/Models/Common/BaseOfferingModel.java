@@ -29,12 +29,10 @@ public abstract class BaseOfferingModel extends BaseModelEntities{
     protected UnitTypes unitType;
     protected Currency currency;
     protected Integer stock;
-    protected String creatorUsername;
     protected String creatorId;
     protected String updatedBy;
 
     protected String companyId;
-    protected String companyName;
 
     private List<String> imgS3UrlKeys = new ArrayList<>();
 
@@ -43,14 +41,9 @@ public abstract class BaseOfferingModel extends BaseModelEntities{
 
     private List<ImageMetadata> imagesMetadata;
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "company-name-index")
-    public String getCompanyName(){return this.companyName;}
-
     @DynamoDbSecondaryPartitionKey(indexNames = "company-id-index")
     public String getCompanyId(){return this.companyId;}
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "creator-name-index")
-    public String getCreatorUsername(){return this.creatorUsername;}
 
 
     @DynamoDbSecondaryPartitionKey(indexNames = "creator-id-index")

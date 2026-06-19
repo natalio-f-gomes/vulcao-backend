@@ -164,7 +164,10 @@ public class OfferingsController {
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String randomId = generateNewIdForOffering(OfferingType.PRODUCT);
         newProduct.setId(randomId);
-        productService.employerSaveProduct(newProduct,userSession, request);
+        ResponseEntity<?> response =  productService.employerSaveProduct(newProduct,userSession, request);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return uploadRequestService.requestProductPresignedUrls(newProduct);
     }
 
@@ -201,7 +204,10 @@ public class OfferingsController {
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String randomId = generateNewIdForOffering(OfferingType.PRODUCT);
         newProduct.setId(randomId);
-        productService.staffSaveProduct(newProduct,userSession, request);
+        ResponseEntity<?> response =   productService.staffSaveProduct(newProduct,userSession, request);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return uploadRequestService.requestProductPresignedUrls(newProduct);
 
     }
@@ -211,14 +217,21 @@ public class OfferingsController {
     public ResponseEntity<?> employerUpdateProduct(@PathVariable String id, @RequestBody ProductModel newProduct, HttpServletRequest request){
         System.out.println("EMPLOYER UPDATE PRODUCT: "+ newProduct.getName());
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        productService.employerUpdateProduct(id, newProduct,userSession, request);
+        ResponseEntity<?> response = productService.employerUpdateProduct(id, newProduct,userSession, request);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PutMapping("/product/staff/update/{id}")
     public ResponseEntity<?> staffUpdateProduct(@PathVariable String id, @RequestBody ProductModel newProduct, HttpServletRequest request){
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        productService.staffUpdateProduct(id, newProduct,userSession, request);
+        ResponseEntity<?> response =  productService.staffUpdateProduct(id, newProduct,userSession, request);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
+
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 

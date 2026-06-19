@@ -17,14 +17,12 @@ public class OfferingsMapper {
         productDTO.setProductType(product.getProductType());
         productDTO.setName(product.getName());
         productDTO.setCompanyId(product.getCompanyId());
-        productDTO.setCompanyName(product.getCompanyName());
         productDTO.setPricePerUnit(product.getPricePerUnit());
         productDTO.setStock(product.getStock());
         productDTO.setUnitType(product.getUnitType());
         productDTO.setUpdatedBy(product.getUpdatedBy());
         productDTO.setCurrency(product.getCurrency());
         productDTO.setDescription(product.getDescription());
-        productDTO.setCreatorUsername(product.getCreatorUsername());
         productDTO.setCreatorId(product.getCreatorId());
         productDTO.setImgS3UrlKeys(product.getImgS3UrlKeys());
         return productDTO;
@@ -44,13 +42,11 @@ public class OfferingsMapper {
 
         bookDTO.setName(bookModel.getName());
         bookDTO.setCompanyId(bookModel.getCompanyId());
-        bookDTO.setCompanyName(bookModel.getCompanyName());
         bookDTO.setPricePerUnit(bookModel.getPricePerUnit());
         bookDTO.setUnitType(bookModel.getUnitType());
         bookDTO.setUpdatedBy(bookModel.getUpdatedBy());
         bookDTO.setCurrency(bookModel.getCurrency());
         bookDTO.setDescription(bookModel.getDescription());
-        bookDTO.setCreatorUsername(bookModel.getCreatorUsername());
         bookDTO.setCreatorId(bookModel.getCreatorId());
         bookDTO.setStock(bookModel.getStock());
 
@@ -89,11 +85,11 @@ public class OfferingsMapper {
         movieDTO.setUnitType(movie.getUnitType());
         movieDTO.setCurrency(movie.getCurrency());
         movieDTO.setStock(movie.getStock());
-        movieDTO.setCreatorUsername(movie.getCreatorUsername());
+
         movieDTO.setCreatorId(movie.getCreatorId());
         movieDTO.setUpdatedBy(movie.getUpdatedBy());
         movieDTO.setCompanyId(movie.getCompanyId());
-        movieDTO.setCompanyName(movie.getCompanyName());
+
 
         // Movie-specific fields
         movieDTO.setDirectors(movie.getDirectors());
@@ -125,11 +121,11 @@ public class OfferingsMapper {
         dto.setUnitType(tvShow.getUnitType());
         dto.setCurrency(tvShow.getCurrency());
         dto.setStock(tvShow.getStock());
-        dto.setCreatorUsername(tvShow.getCreatorUsername());
+
         dto.setCreatorId(tvShow.getCreatorId());
         dto.setUpdatedBy(tvShow.getUpdatedBy());
         dto.setCompanyId(tvShow.getCompanyId());
-        dto.setCompanyName(tvShow.getCompanyName());
+
 
         // Media / shared cinematic fields
         dto.setDirectors(tvShow.getDirectors());
@@ -172,11 +168,9 @@ public class OfferingsMapper {
         dto.setUnitType(music.getUnitType());
         dto.setCurrency(music.getCurrency());
         dto.setStock(music.getStock());
-        dto.setCreatorUsername(music.getCreatorUsername());
         dto.setCreatorId(music.getCreatorId());
         dto.setUpdatedBy(music.getUpdatedBy());
         dto.setCompanyId(music.getCompanyId());
-        dto.setCompanyName(music.getCompanyName());
 
         // Media / shared cinematic fields
         dto.setAlbumName(music.getAlbumName());
