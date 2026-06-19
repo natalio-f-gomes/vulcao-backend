@@ -11,9 +11,11 @@ import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.CompanyModel;
+import dev.hope.vulcaobackend.Models.MFAModel;
 import dev.hope.vulcaobackend.Models.Properties.Permissions;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
+import dev.hope.vulcaobackend.Repositories.MfaRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,8 @@ public class StaffService {
     @Autowired private StaffMapper staffMapper;
     @Autowired
     private AuthService authService;
+    @Autowired
+    private MfaRepository mfaRepository;
 
     public StaffDTO findStaffById(String id){
         StaffModel staff =  staffRepository.findById(id)
@@ -239,6 +243,13 @@ public class StaffService {
         staffRepository.update(staff);
     }
 
+
+    public void resetStaffPassword(StaffModel staff, String newPassword) {
+        staff.setPassword(passwordEncoder.encode(newPassword));
+        staffRepository.update(staff);
+        MFAModel mfaData = mfaRepository.findByUserEmail(staff.getEmail()).orElseThrow(()-> new RuntimeException("User MFA data not found"));
+        mfaRepository.deleteMFAData(mfaData);
+    }
 
 }
 

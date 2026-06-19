@@ -7,6 +7,7 @@ import dev.hope.vulcaobackend.Authentication.IPService;
 import dev.hope.vulcaobackend.Authentication.JWTService;
 import dev.hope.vulcaobackend.Authentication.LoginRequest;
 import dev.hope.vulcaobackend.Configuration.AWSSESConfig;
+import dev.hope.vulcaobackend.DataTransferObjects.ResetPasswordRequest;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
@@ -64,6 +65,42 @@ public class AuthController {
     public AuthController(AWSSESConfig sesService) {
         this.sesService = sesService;
     }
+
+
+    @PostMapping("/user/password/reset/request/{email}")
+    public ResponseEntity<?> UserResetPasswordRequest(@PathVariable String email) {
+        authService.validateEmail(email);
+
+        boolean usernameExists = userRepository.findByEmail(email).isPresent();
+        if(!usernameExists){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Este e-mail não está associado a nenhum cliente.");
+        }
+
+        String randomCode = mfaService.save(email);
+        sesService.sendCode(email, randomCode);
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body("Enviámos um código de verificação para o seu e-mail.");
+    }
+
+    @PostMapping("/user/password/reset/confirm/{email}/{mfaCode}")
+    public ResponseEntity<?> UserResetPasswordConfirm(@PathVariable String email, @PathVariable String mfaCode, @RequestBody ResetPasswordRequest passwordRequest) {
+        System.out.println("Employer reset password confirm endpoint reached");
+        ResponseEntity<?> emailResponse = authService.validateEmail(email);
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+
+        UserModel user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Este e-mail não está associado a nenhum cliente."));
+        ResponseEntity<?> mfaResponse = mfaService.confirmMFA(email, mfaCode);
+        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return mfaResponse;
+        }
+
+        userService.resetUserPassword(user, passwordRequest.getNewPassword());
+        return ResponseEntity.ok().body("Palavra-passe reposta com sucesso.\nSinta-se à vontade para iniciar sessão, estimado cliente.");
+
+    }
+
 
 
     @PostMapping("/user/register/request/{userEmail}/{username}")
@@ -300,6 +337,47 @@ public class AuthController {
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("LOGGED OUT SUCCESSFULLY");
     }
+
+
+
+    @PostMapping("/employer/password/reset/request/{email}")
+    public ResponseEntity<?> EmployerResetPasswordRequest(@PathVariable String email) {
+        System.out.println("Employer reset password confirm endpoint reached");
+        ResponseEntity<?> emailResponse = authService.validateEmail(email);
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+
+        boolean emailExists = employerRepository.findByEmail(email).isPresent();
+        if(!emailExists){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Este e-mail não está associado a nenhum empresário(a).");
+        }
+
+        String randomCode = mfaService.save(email);
+        sesService.sendCode(email, randomCode);
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body("Enviámos um código de verificação para o seu e-mail.");
+    }
+
+    @PostMapping("/employer/password/reset/confirm/{email}/{mfaCode}")
+    public ResponseEntity<?> EmployerResetPasswordConfirm(@PathVariable String email, @PathVariable String mfaCode, @RequestBody ResetPasswordRequest passwordRequest) {
+        System.out.println("Employer reset password confirm endpoint reached");
+        ResponseEntity<?> emailResponse = authService.validateEmail(email);
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+
+        EmployerModel employer = employerRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Este e-mail não está associado a nenhum empresário(a)."));
+        ResponseEntity<?> mfaResponse = mfaService.confirmMFA(email, mfaCode);
+        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return mfaResponse;
+        }
+
+        employerService.resetEmployerPassword(employer, passwordRequest.getNewPassword());
+        return ResponseEntity.ok().body("Palavra-passe reposta com sucesso.\nSinta-se à vontade para iniciar sessão, estimado Empresário(a).");
+
+    }
+
 
     @PostMapping("/staff/register")
     public ResponseEntity<?> registerStaff(@RequestBody StaffModel newStaff){

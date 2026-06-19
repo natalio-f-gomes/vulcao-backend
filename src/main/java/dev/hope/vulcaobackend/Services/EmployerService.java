@@ -10,8 +10,10 @@ import dev.hope.vulcaobackend.Mappers.CompanyMapper;
 import dev.hope.vulcaobackend.Mappers.EmployerMapper;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
+import dev.hope.vulcaobackend.Models.MFAModel;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
+import dev.hope.vulcaobackend.Repositories.MfaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +43,8 @@ public class EmployerService {
     private CompanyMapper companyMapper;
     @Autowired
     private AuthService authService;
+    @Autowired
+    private MfaRepository mfaRepository;
 
 
     public EmployerDTO findEmployerByUsername(String username){
@@ -140,5 +144,11 @@ public class EmployerService {
                 .collect(Collectors.toList());
     }
 
+    public void resetEmployerPassword(EmployerModel employer, String newPassword) {
+        employer.setPassword(passwordEncoder.encode(newPassword));
+        employerRepository.update(employer);
+        MFAModel mfaData = mfaRepository.findByUserEmail(employer.getEmail()).orElseThrow(()-> new RuntimeException("User MFA data not found"));
+        mfaRepository.deleteMFAData(mfaData);
+    }
 
 }

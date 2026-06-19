@@ -6,12 +6,16 @@ import dev.hope.vulcaobackend.DataTransferObjects.UserContactData;
 import dev.hope.vulcaobackend.DataTransferObjects.UserCredentials;
 import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Mappers.UserMapper;
+import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
+import dev.hope.vulcaobackend.Models.MFAModel;
+import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.MfaRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +39,10 @@ public class UserService {
     private GlobalAccessControl globalAccessControl;
     @Autowired
     private AuthService authService;
+    @Autowired
+    private MfaRepository mfaRepository;
+    @Autowired
+    private EmployerRepository employerRepository;
 
 
     public void save(UserModel newUser){
@@ -247,4 +255,13 @@ public class UserService {
         }
 
     }
+
+    public void resetUserPassword(UserModel user, String newPassword){
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.update(user);
+        MFAModel mfaData = mfaRepository.findByUserEmail(user.getEmail()).orElseThrow(()-> new RuntimeException("User MFA data not found"));
+        mfaRepository.deleteMFAData(mfaData);
+    }
+
+
 }
