@@ -19,6 +19,8 @@ import dev.hope.vulcaobackend.Repositories.MfaRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,6 +46,8 @@ public class StaffService {
     private AuthService authService;
     @Autowired
     private MfaRepository mfaRepository;
+    @Autowired
+    private CompanyService companyService;
 
     public StaffDTO findStaffById(String id){
         StaffModel staff =  staffRepository.findById(id)
@@ -78,18 +82,64 @@ public class StaffService {
         return staffMapper.transformData(staff);
     }
 
-    public void registerStaff(StaffModel newStaff) {
+    public ResponseEntity<?> validateStaff(StaffModel staff){
+        ResponseEntity<?> nameResponse = authService.validateName(staff.getFirstName(), staff.getLastName());
+        ResponseEntity<?> emailResponse =   authService.validateEmail(staff.getEmail());
+        ResponseEntity<?> usernameResponse =authService.validateUsername(staff.getUsername());
+
+        if(!nameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return nameResponse;
+        }
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
+
+        ResponseEntity<?> addressResponse = companyService.isCompanyAddressValid(staff.getAddress());
+        if (!addressResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A morada introduzida não é válida.");
+        }
+
+        ResponseEntity<?> phoneResponse = companyService.isCompanyPhoneNumberValid(staff.getPhoneNumber());
+        if (!phoneResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O número de telefone introduzido não é válido.");
+        }
+
+        ResponseEntity<?> departmentResponse = companyService.isCompanyDescriptionValid(staff.getDepartment());
+        if (!departmentResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O departamento selecionado ou a sua descrição não é válida.");
+        }
+
+        ResponseEntity<?> jobTitleResponse = companyService.isCompanyDescriptionValid(staff.getJobTitle());
+        if (!jobTitleResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O cargo/função introduzido não é válido.");
+        }
+
+        if(staff.getPassword().length() < 8 || staff.getPassword().length() > 50){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A palavra passe deve ter pelo menos 8 characteres");
+        }
+        return ResponseEntity.accepted().build();
+    }
+
+    public ResponseEntity<?> registerStaff(StaffModel newStaff) {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         CompanyModel staffCompany = companyRepository.findById(newStaff.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Company with id " + newStaff.getCompanyId() + " not found"));
         EmployerModel executive = employerRepository.findByUsername(sessionUser)
                 .orElseThrow(() -> new UsernameNotFoundException("Executive with username" + sessionUser + " not found"));
+        ResponseEntity<?> response =  validateStaff(newStaff);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         newStaff.setCompanyId(staffCompany.getId());
         newStaff.setCompanyName(staffCompany.getName());
         newStaff.setPassword(passwordEncoder.encode(newStaff.getPassword()));
         newStaff.setCreatorUsername(sessionUser);
         newStaff.onCreate();
         staffRepository.save(newStaff);
+        return ResponseEntity.accepted().build();
     }
 
     public void employerDeleteStaffById(String companyId, String executiveId, String staffID, HttpServletRequest request) throws AccessDeniedException {
@@ -145,11 +195,15 @@ public class StaffService {
 
     }
 
-    public void employerUpdateStaff(String staffID, StaffModel updatedStaff, HttpServletRequest request) throws AccessDeniedException {
+    public ResponseEntity<?> employerUpdateStaff(String staffID, StaffModel updatedStaff, HttpServletRequest request) throws AccessDeniedException {
         String sessionUsername = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         EmployerModel employer = employerRepository.findByUsername(sessionUsername)
                 .orElseThrow(()-> new UsernameNotFoundException("Employer with username "+ sessionUsername + " not found"));
         StaffModel staff = staffRepository.findById(staffID).orElseThrow(()-> new RuntimeException("staff with id "+ staffID + " not found"));
+        ResponseEntity<?> response = validateStaff(updatedStaff);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         staff.setUsername(updatedStaff.getUsername());
         staff.setFirstName(updatedStaff.getFirstName());
         staff.setLastName(updatedStaff.getLastName());
@@ -166,6 +220,7 @@ public class StaffService {
         staff.setSalary(updatedStaff.getSalary());
         staff.onUpdate();
         staffRepository.update(staff);
+        return ResponseEntity.accepted().build();
     }
 
     public void updateStaffAddress(String staffId, Address newAddress) throws AccessDeniedException {

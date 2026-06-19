@@ -57,7 +57,10 @@ public class StaffController {
     @PutMapping("/update/{staffId}")
     public ResponseEntity<?> employerUpdateStaff(@PathVariable String staffId, @RequestBody StaffModel updatedUser, HttpServletRequest request)  {
         try{
-            staffService.employerUpdateStaff(staffId, updatedUser, request);
+             ResponseEntity<?> response = staffService.employerUpdateStaff(staffId, updatedUser, request);
+             if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+                 return response;
+             }
             return ResponseEntity.status(HttpStatus.OK).build();
         }catch (AccessDeniedException e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

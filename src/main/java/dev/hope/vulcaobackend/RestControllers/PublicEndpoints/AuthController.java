@@ -60,6 +60,8 @@ public class AuthController {
     @Autowired private MFAService mfaService;
 
     AWSSESConfig sesService;
+    @Autowired
+    private CompanyService companyService;
 
 
     public AuthController(AWSSESConfig sesService) {
@@ -386,19 +388,8 @@ public class AuthController {
             return ResponseEntity.badRequest()
                     .body(new APIResponse(null, "Company ID is required",400, LocalDateTime.now()));
         }
-        ResponseEntity<?> nameResponse = authService.validateName(newStaff.getFirstName(), newStaff.getLastName());
-        ResponseEntity<?> emailResponse =   authService.validateEmail(newStaff.getEmail());
-        ResponseEntity<?> usernameResponse =authService.validateUsername(newStaff.getUsername());
 
-        if(!nameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-            return nameResponse;
-        }
-        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-            return emailResponse;
-        }
-        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-            return usernameResponse;
-        }
+
         if(globalAccessControl.checkIfEntityExistsBeforeRegister(newStaff.getUsername())){
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new APIResponse(null, "User already exists", 409, LocalDateTime.now()));
@@ -406,10 +397,12 @@ public class AuthController {
         try {
             String staffId = globalAccessControl.generateNewIdForStaff();
             newStaff.setId(staffId);
-            staffService.registerStaff(newStaff);
-                        //cartService.createCartOnce(newUser);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new APIResponse("Staff registered successfully", null, 201, LocalDateTime.now()));
+            ResponseEntity<?> response =  staffService.registerStaff(newStaff);
+            if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+                return  response;
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+
                     } catch (NullPointerException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

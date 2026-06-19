@@ -35,7 +35,7 @@ public class CompanyService {
     private final static String NAME_PATTERN = "^[\\p{L}0-9 +_.\\-/()&',]{0,500}$";
 
 
-    public ResponseEntity<?> isCompanyAddressValid(Address address){
+    public static ResponseEntity<?> isCompanyAddressValid(Address address){
         if (address == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Os dados da morada devem ser preenchidos.");
         }
@@ -145,7 +145,7 @@ public class CompanyService {
         return ResponseEntity.accepted().build();
     }
 
-    public ResponseEntity<?> isCompanyPhoneNumberValid(String phoneNumber){
+    public static ResponseEntity<?> isCompanyPhoneNumberValid(String phoneNumber){
         debugInput(phoneNumber);
         String CV_PHONE_FORMAT = "^[+0-9\\- ]{7,15}$";
         if(phoneNumber == null || phoneNumber.isEmpty()){
@@ -157,7 +157,7 @@ public class CompanyService {
         return ResponseEntity.accepted().build();
     }
 
-    public ResponseEntity<?> isCompanyFaxValid(String fax){
+    public static ResponseEntity<?> isCompanyFaxValid(String fax){
         debugInput(fax);
         String FAX_FORMAT = "^\\d{0,50}$";
         if(!fax.matches(FAX_FORMAT)){
@@ -166,7 +166,7 @@ public class CompanyService {
         return ResponseEntity.accepted().build();
     }
 
-    public void debugInput(String field){
+    public static void debugInput(String field){
         System.out.println(field.toUpperCase() + "=[" + field + "] len=" + (field == null ? -1 : field.length()));
     }
 
@@ -331,7 +331,7 @@ public class CompanyService {
             return companyDescription;
         }
 
-        ResponseEntity<?> companyTaxId = isCompanyTaxIdValid(info.getTaxIdNumber());
+        ResponseEntity<?> companyTaxId = isCompanyTaxIdValid(company.getTaxIdNumber());
         if(!companyTaxId.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return companyTaxId;
         }
