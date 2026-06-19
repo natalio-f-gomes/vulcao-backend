@@ -192,7 +192,7 @@ public class AuthController {
         UserModel user = userRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("USER WITH THIS USERNAME WAS NOT FOUND "+ loginRequest.username()));
 
         ResponseEntity<?> responseMFA =  mfaService.confirmMFA(user.getEmail(), mfaCode);
-        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return responseMFA;
         }
 
@@ -311,7 +311,7 @@ public class AuthController {
                 new UsernameNotFoundException("Empresário(a) com este nome the usuário não foin encontrado: '" + loginRequest.username() + "'"));
 
         ResponseEntity<?> responseMFA =  mfaService.confirmMFA(employer.getEmail(), mfaCode);
-        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return responseMFA;
         }
         try {
@@ -439,7 +439,7 @@ public class AuthController {
         StaffModel staff = staffRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("THIS Staff DOES NOT EXIST"));
 
         ResponseEntity<?> responseMFA =  mfaService.confirmMFA(staff.getEmail(), mfaCode);
-        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+        if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return responseMFA;
         }
         authService.validateUsername(loginRequest.username());
