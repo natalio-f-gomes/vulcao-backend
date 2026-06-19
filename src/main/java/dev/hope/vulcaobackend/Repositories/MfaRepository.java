@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,9 +68,11 @@ public class MfaRepository {
     }
 
     public Optional<MFAModel> findByUserEmail(String email){
-        return mfaTable.index("user-email-index").query(QueryConditional.keyEqualTo(k -> k.partitionValue(email))).stream()
+        return mfaTable.index("user-email-index")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(email)))
+                .stream()
                 .flatMap(page -> page.items().stream())
-                .findFirst();
+                .max(Comparator.comparing(MFAModel::getSendTime));
     }
 
     public void deleteMFAData(MFAModel data){
