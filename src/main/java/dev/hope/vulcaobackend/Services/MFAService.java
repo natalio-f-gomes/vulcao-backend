@@ -59,6 +59,9 @@ public class MFAService {
 
     // Add a method to delete after successful registration
     public void deleteMFA(String email) {
-        mfaRepository.findByUserEmail(email).ifPresent(mfaRepository::deleteMFAData);
+        System.out.println("MFA DELETE POINT REACHED");
+        MFAModel mfaData = mfaRepository.findByUserEmail(email).orElseThrow(()-> new RuntimeException("MFA not found for: " + email));
+        mfaRepository.deleteMFAData(mfaData);
+        System.out.println("MFA SUCCESSFULLY DELETED");
     }
 }
