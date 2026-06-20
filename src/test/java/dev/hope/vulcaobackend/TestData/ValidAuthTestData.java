@@ -16,9 +16,9 @@ import java.util.List;
  *
  * Fields per object: username, lastName, firstName, email, password.
  */
-public  class ValidEmployerTestData {
+public  class ValidAuthTestData {
 
-    public ValidEmployerTestData() {
+    public ValidAuthTestData() {
     }
 
     public List<JSONObject> validEmployers() throws JSONException {

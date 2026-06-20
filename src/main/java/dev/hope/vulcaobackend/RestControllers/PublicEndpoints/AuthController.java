@@ -108,15 +108,23 @@ public class AuthController {
 
     @PostMapping("/user/register/request/{userEmail}/{username}")
     public ResponseEntity<?> registerUserRequest(@PathVariable String userEmail, @PathVariable String username) {
-        authService.validateUsername(username);
-        authService.validateEmail(userEmail);
+
+        ResponseEntity<?> usernameResponse = authService.validateUsername(username);
+        if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return usernameResponse;
+        }
+
+        ResponseEntity<?> emailResponse =  authService.validateEmail(userEmail);
+        if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return emailResponse;
+        }
 
         boolean usernameExists = userRepository.findByUsername(username).isPresent();
         if(usernameExists){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Este nome de usuário já está em uso.Por favor escolhe um nome the usuário differente");
         }
 
-        String randomCode =mfaService.save(userEmail);
+        String randomCode = mfaService.save(userEmail);
         sesService.sendCode(userEmail, randomCode);
         return ResponseEntity.accepted().build(); //202
     }
@@ -126,7 +134,8 @@ public class AuthController {
     public ResponseEntity<?> userRegisterConfirm(@PathVariable String mfaCode, @RequestBody UserModel newUser){
         // Validate MFA
         ResponseEntity<?> mfaResponse = mfaService.confirmMFA(newUser.getEmail(), mfaCode);
-        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+
             return mfaResponse;
         }
 
@@ -170,8 +179,6 @@ public class AuthController {
                     .body(Map.of("message", "Erro inesperado. Por favor, tente novamente."));
         }
     }
-
-
 
 
     @PostMapping("/user/login/request/{username}")

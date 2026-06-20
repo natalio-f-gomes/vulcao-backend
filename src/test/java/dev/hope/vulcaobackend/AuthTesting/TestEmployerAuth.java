@@ -2,10 +2,10 @@ package dev.hope.vulcaobackend.AuthTesting;
 
 
 import dev.hope.vulcaobackend.CleanTable;
-import dev.hope.vulcaobackend.RequestHandler;
+import dev.hope.vulcaobackend.EmployerRequestHandler;
 import dev.hope.vulcaobackend.TestData.CompanyTestData;
 import dev.hope.vulcaobackend.TestData.InvalidEmployerTestData;
-import dev.hope.vulcaobackend.TestData.ValidEmployerTestData;
+import dev.hope.vulcaobackend.TestData.ValidAuthTestData;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,16 +40,16 @@ public class TestEmployerAuth extends CleanTable {
     @Autowired
     private RestTestClient restTestClient;
 
-    private RequestHandler requestHandler;
+    private EmployerRequestHandler employerRequestHandler;
 
-    private ValidEmployerTestData employerTestData = new ValidEmployerTestData();
+    private ValidAuthTestData employerTestData = new ValidAuthTestData();
     private InvalidEmployerTestData invalidEmployerTestData =new InvalidEmployerTestData();
 
     private CompanyTestData companyTestData = new CompanyTestData();
 
     @BeforeEach
     void setUp() {
-        this.requestHandler = new RequestHandler(restTestClient);
+        this.employerRequestHandler = new EmployerRequestHandler(restTestClient);
     }
 
     @BeforeEach
@@ -99,7 +98,7 @@ public class TestEmployerAuth extends CleanTable {
             company.remove("creatorUsername");
             company.put("creatorUsername", username);
             company.put("imagesMetadata", new JSONArray());
-            requestHandler.companyRegisterRequest(token, company.toString(), 204, port);
+            employerRequestHandler.companyRegisterRequest(token, company.toString(), 204, port);
         }
     }
 
@@ -113,8 +112,8 @@ public class TestEmployerAuth extends CleanTable {
                 String email = employer.get("email").toString();
                 String username = employer.get("username").toString();
                 String password = employer.get("password").toString();
-                requestHandler.employerRegisterRequest(email, username, 400, port);
-                requestHandler.employerLoginRequest(username, 400, port);
+                employerRequestHandler.employerRegisterRequest(email, username, 400, port);
+                employerRequestHandler.employerLoginRequest(username, 400, port);
             }catch (JSONException e){
                 //
             }
@@ -125,7 +124,7 @@ public class TestEmployerAuth extends CleanTable {
 
     public void registerEmployer(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {
         System.out.println("Sending registration request...");
-        requestHandler.employerRegisterRequest(employerEmail, username, expectedRequestStatus, port);
+        employerRequestHandler.employerRegisterRequest(employerEmail, username, expectedRequestStatus, port);
 
         Thread.sleep(250);
         System.out.println("After sleep, checking /store...");
@@ -191,12 +190,12 @@ public class TestEmployerAuth extends CleanTable {
         // Change this to fail the test if no code found
         assertNotNull(code, "No verification code found in any email after " + maxAttempts + " attempts");
 
-        requestHandler.employerRegisterConfirm(code, employer.toString(), expectedConfirmStatus, port);
+        employerRequestHandler.employerRegisterConfirm(code, employer.toString(), expectedConfirmStatus, port);
     }
 
     public String loginEmployer(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {
         System.out.println("Sending login request...");
-        requestHandler.employerLoginRequest(username, expectedRequestStatus, port);
+        employerRequestHandler.employerLoginRequest(username, expectedRequestStatus, port);
 
         Thread.sleep(250);
         System.out.println("After sleep, checking /store...");
@@ -263,7 +262,7 @@ public class TestEmployerAuth extends CleanTable {
 
         assertNotNull(code, "No verification code found in any email after " + maxAttempts + " attempts");
 
-        return requestHandler.employerLoginConfirm(code, employer.toString(), expectedConfirmStatus, port);
+        return employerRequestHandler.employerLoginConfirm(code, employer.toString(), expectedConfirmStatus, port);
     }
 
 

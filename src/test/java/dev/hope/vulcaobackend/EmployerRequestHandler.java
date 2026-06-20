@@ -1,9 +1,8 @@
 package dev.hope.vulcaobackend;
 
-import org.json.JSONObject;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
-public class RequestHandler {
+public class EmployerRequestHandler {
 
     private static final String employerRegisterRequestEndpoint ="/api/v1/auth/employer/request/register/";
     private static final String employerRegisterConfirmEndpoint ="/api/v1/auth/employer/confirm/register/";
@@ -14,7 +13,7 @@ public class RequestHandler {
 
 
     private RestTestClient restTestClient;
-    public RequestHandler(RestTestClient restTestClient) {
+    public EmployerRequestHandler(RestTestClient restTestClient) {
         this.restTestClient = restTestClient;
     }
 
