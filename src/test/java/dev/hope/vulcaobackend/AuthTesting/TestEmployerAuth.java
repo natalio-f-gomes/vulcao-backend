@@ -3,10 +3,7 @@ package dev.hope.vulcaobackend.AuthTesting;
 
 import dev.hope.vulcaobackend.CleanTable;
 import dev.hope.vulcaobackend.EmployerRequestHandler;
-import dev.hope.vulcaobackend.TestData.CompanyTestData;
-import dev.hope.vulcaobackend.TestData.InvalidAuthRequestData;
-import dev.hope.vulcaobackend.TestData.InvalidAuthTestData;
-import dev.hope.vulcaobackend.TestData.ValidAuthTestData;
+import dev.hope.vulcaobackend.TestData.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,6 +44,7 @@ public class TestEmployerAuth extends CleanTable {
     private InvalidAuthRequestData invalidAuthRequestData =new InvalidAuthRequestData();
 
     private CompanyTestData companyTestData = new CompanyTestData();
+    private InvalidCompanyTestData invalidCompanyTestData = new InvalidCompanyTestData();
 
     @BeforeEach
     void setUp() {
@@ -82,12 +80,12 @@ public class TestEmployerAuth extends CleanTable {
     }
 
     @Test
-    void testCompanyRegistrationWithValidData() throws JSONException, IOException, InterruptedException {
+    void testCompanyRegistrationData() throws JSONException, IOException, InterruptedException {
         System.out.println("=== Starting test ===");
         JSONObject employer1 = new JSONObject().put("username", "nataliogomes")
                 .put("firstName", "Natalio").put("lastName", "Gomes")
                 .put("email", "natalio@gmail.com").put("password", "password");
-        List<JSONObject> companies = companyTestData.validCompanies();
+        List<JSONObject> validCompanies = companyTestData.validCompanies();
         String email = employer1.get("email").toString();
         String username = employer1.get("username").toString();
         registerEmployer(email, username, employer1, 202, 201);
@@ -95,12 +93,21 @@ public class TestEmployerAuth extends CleanTable {
         employerLoginData.put("username", username);
         employerLoginData.put("password", "password");
         String token = loginEmployer(email, username, employerLoginData,202, 200);
-        for(JSONObject company: companies){
+        for(JSONObject company: validCompanies){
             company.remove("creatorUsername");
             company.put("creatorUsername", username);
             company.put("imagesMetadata", new JSONArray());
             employerRequestHandler.companyRegisterRequest(token, company.toString(), 204, port);
         }
+
+        List<JSONObject> invalidCompanies = invalidCompanyTestData.invalidCompanies();
+        for(JSONObject company: invalidCompanies){
+            company.remove("creatorUsername");
+            company.put("creatorUsername", username);
+            company.put("imagesMetadata", new JSONArray());
+            employerRequestHandler.companyRegisterRequest(token, company.toString(), 400, port);
+        }
+
     }
 
    // @Test // TODO later

@@ -9,328 +9,398 @@ import java.util.List;
 /**
  * Extensive set of INVALID company registration payloads for negative tests.
  *
- * Body shape (creatorUsername and address.state intentionally removed):
- *   name, category, taxIdNumber, description, phoneNumber, faxNumber,
- *   revenue, email, address { island, city, zone, postalCode, street }, status
+ * A company is created by a logged-in employer, so {@code creatorUsername}
+ * references a username from {@code EmployerTestData}.
  *
- * Validation rules under test:
- *   - name        : required, non-empty (after trim), length <= 500, unique.
- *   - category    : required, one of the CATEGORY constants.
- *   - taxIdNumber : OPTIONAL (may be ""); if present must be exactly 9 digits
- *                   (NIF rule, per RegisterBusinessModal). See note below.
- *   - description : required, non-empty (after trim), length <= 5000.
- *   - phoneNumber : required, non-empty.
- *   - faxNumber   : OPTIONAL (may be ""); if present letters/digits/'-' only.
- *   - revenue     : required, numeric.
- *   - email       : required, well-formed, length 5..50 (inclusive).
- *   - address     : required object; island, city and zone are required
- *                   (postalCode and street are optional).
- *   - status      : required, one of OPERATING | INACTIVE | CLOSED.
+ * Field rules:
+ *   - name            : required, non-empty, UNIQUE across all entries.
+ *   - category        : required, one of the CATEGORY constants.
+ *   - creatorUsername : required (the employer that owns the company).
+ *   - taxIdNumber     : OPTIONAL (may be ""); otherwise letters/digits/'-' only.
+ *   - description     : free text.
+ *   - phoneNumber     : contact phone.
+ *   - faxNumber       : OPTIONAL (may be ""); otherwise letters/digits/'-' only.
+ *   - revenue         : numeric (double).
+ *   - email           : well-formed address.
+ *   - address         : nested object { street, city, state, postalCode, island, zone }
+ *   - status          : one of OPERATING | INACTIVE | CLOSED.
  *
- * NOTE on taxIdNumber: these cases treat the 9-digit NIF rule as authoritative.
- * If your real rule is instead "letters/digits/'-'", swap the taxIdNumber
- * section for values containing illegal chars (space, '+', '@', ...).
- *
- * Design: each entry violates exactly ONE rule (every other field valid), so a
- * parameterized test can assert which field the API rejected. A final MULTIPLE
- * section breaks several rules at once. "missing" = key absent; "null" = key
- * maps to a JSON null literal.
+ * Coverage:
+ *   - Every required field tested with empty, null, and missing values
+ *   - Invalid formats for all fields
+ *   - Boundary conditions (too long, too short)
+ *   - SQL injection, XSS, and other security attacks
+ *   - Multiple violations combined
  */
 public class InvalidCompanyTestData {
 
-    /** A single negative case: payload + which field is expected to fail + why. */
-    public static final class InvalidCase {
-        public final JSONObject payload;
-        public final String field;   // name|category|taxIdNumber|description|phoneNumber|faxNumber|revenue|email|status|island|city|zone|address|multiple
-        public final String reason;
-
-        public InvalidCase(JSONObject payload, String field, String reason) {
-            this.payload = payload;
-            this.field = field;
-            this.reason = reason;
-        }
-
-        @Override
-        public String toString() {
-            return "[" + field + "] " + reason;
-        }
-    }
-
     // ----- category enum values (exact strings, accents preserved) -----------
-    private static final String SUPERMERCADO = "SUPERMERCADO";
-    private static final String CATEGORIES_OUTROS = "OUTROS";
+    private static final String LOJA_DE_CONVENIENCIA            = "LOJA_DE_CONVENIÊNCIA";
+    private static final String SUPERMERCADO                    = "SUPERMERCADO";
+    private static final String HIPERMERCADO                    = "HIPERMERCADO";
+    private static final String GRANDES_ARMAZENS                = "GRANDES_ARMÁZENS";
+    private static final String CENTRO_COMERCIAL                = "CENTRO_COMERCIAL";
+    private static final String COMERCIO_ELETRONICO            = "COMÉRCIO_ELETRÓNICO";
+    private static final String LOJA_DE_ELETRONICA_E_INFORMATICA = "LOJA_DE_ELETRÓNICA_E_INFORMÁTICA";
+    private static final String FABRICANTE_DE_HARDWARE         = "FABRICANTE_DE_HARDWARE";
+    private static final String LIVRARIA_E_EDITORIA            = "LIVRARIA_E_EDITORIA";
+    private static final String CINEMA                        = "CINEMA";
+    private static final String PRODUTORA_DE_CINEMA_E_TELEVISAO = "PRODUTORA_DE_CINEMA_E_TELEVISÃO";
+    private static final String SERVICO_DE_STREAMING          = "SERVIÇO_DE_STREAMING";
+    private static final String CANAIS_DE_TELEVISAO_E_RADIO    = "CANAIS_DE_TELEVISÃO_E_RÁDIO";
+    private static final String EMPRESA_DE_VIDEOJOGOS         = "EMPRESA_DE_VIDEOJOGOS";
+    private static final String MERCADO_ABASTECEDOR           = "MERCADO_ABASTECEDOR";
+    private static final String LOJA_EM_SEGUNDA_MAO           = "LOJA_EM_SEGUNDA_MÃO";
+    private static final String OUTROS                        = "OUTROS";
 
     // ----- status enum values ------------------------------------------------
     private static final String OPERATING = "OPERATING";
+    private static final String INACTIVE  = "INACTIVE";
+    private static final String CLOSED    = "CLOSED";
+
+    // ----- valid base values for building invalid cases ----------------------
+    private static final String VALID_NAME = "Valid Company Name";
+    private static final String VALID_CATEGORY = SUPERMERCADO;
+    private static final String VALID_CREATOR = "tiagomonteiro";
+    private static final String VALID_TAX_ID = "2034567890";
+    private static final String VALID_DESCRIPTION = "Valid company description";
+    private static final String VALID_PHONE = "+1-555-0234";
+    private static final String VALID_FAX = "5550235";
+    private static final double VALID_REVENUE = 1750000.75;
+    private static final String VALID_EMAIL = "info@validcompany.com";
+    private static final String VALID_STATUS = OPERATING;
+
+    // ----- valid address values ---------------------------------------------
+    private static final String VALID_STREET = "456 Harvest Lane";
+    private static final String VALID_CITY = "Portland";
+    private static final String VALID_POSTAL_CODE = "97201";
+    private static final String VALID_ISLAND = "SANTIAGO";
+    private static final String VALID_ZONE = "Downtown";
 
     public InvalidCompanyTestData() {
     }
 
+    /**
+     * Returns all invalid company payloads for testing validation failures.
+     * These should result in HTTP 400 BAD REQUEST.
+     */
     public List<JSONObject> invalidCompanies() throws JSONException {
-        List<JSONObject> out = new ArrayList<>();
-        for (InvalidCase c : invalidCompanyCases()) {
-            out.add(c.payload);
-        }
-        return out;
+        List<JSONObject> companies = new ArrayList<>();
+        companies.addAll(invalidCompaniesForBadRequest());
+        companies.addAll(invalidCompaniesForSecurityRejection());
+        return companies;
     }
 
-    public List<InvalidCase> invalidCompanyCases() throws JSONException {
-        List<InvalidCase> cases = new ArrayList<>();
+    /**
+     * Returns payloads that should result in HTTP 400 BAD REQUEST.
+     * These are validation failures that the application should handle gracefully.
+     */
+    public List<JSONObject> invalidCompaniesForBadRequest() throws JSONException {
+        List<JSONObject> companies = new ArrayList<>();
 
         // =====================================================================
-        // NAME
+        // NAME — empty / blank / missing / null
         // =====================================================================
-        cases.add(bad("name", "empty string",
-                companyNamed("")));
-        cases.add(bad("name", "single space (blank after trim)",
-                companyNamed(" ")));
-        cases.add(bad("name", "whitespace only",
-                companyNamed("  \t  ")));
-        cases.add(bad("name", "501 chars (max + 1)",
-                companyNamed(repeat("N", 501))));
-        cases.add(bad("name", "600 chars",
-                companyNamed(repeat("N", 600))));
-        cases.add(bad("name", "key missing",
-                without("name", base("ignored-name"))));
-        cases.add(bad("name", "explicit JSON null",
-                nulled("name", base("ignored-name"))));
+        companies.add(invalidCompany("name", "empty string",
+                company("", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID, VALID_DESCRIPTION,
+                        VALID_PHONE, VALID_FAX, VALID_REVENUE, VALID_EMAIL,
+                        validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("name", "single space",
+                company(" ", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID, VALID_DESCRIPTION,
+                        VALID_PHONE, VALID_FAX, VALID_REVENUE, VALID_EMAIL,
+                        validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("name", "whitespace only",
+                company("  \t  ", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID, VALID_DESCRIPTION,
+                        VALID_PHONE, VALID_FAX, VALID_REVENUE, VALID_EMAIL,
+                        validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("name", "key missing",
+                without("name", company("", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS))));
+
+        companies.add(invalidCompany("name", "explicit JSON null",
+                nulled("name", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS))));
 
         // =====================================================================
-        // CATEGORY
+        // NAME — too long
         // =====================================================================
-        cases.add(bad("category", "empty string",
-                withCategory("Cat-Empty Co", "")));
-        cases.add(bad("category", "value not in enum",
-                withCategory("Cat-Unknown Co", "NOT_A_CATEGORY")));
-        cases.add(bad("category", "wrong case",
-                withCategory("Cat-Case Co", "supermercado")));
-        cases.add(bad("category", "near-miss (OUTRO vs OUTROS)",
-                withCategory("Cat-NearMiss Co", "OUTRO")));
-        cases.add(bad("category", "accents stripped",
-                withCategory("Cat-NoAccent Co", "COMERCIO_ELETRONICO")));
-        cases.add(bad("category", "key missing",
-                without("category", base("Cat-Missing Co"))));
-        cases.add(bad("category", "explicit JSON null",
-                nulled("category", base("Cat-Null Co"))));
+        companies.add(invalidCompany("name", "201 chars (boundary: max + 1)",
+                company(repeat("A", 201), VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("name", "500 chars",
+                company(repeat("A", 500), VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
 
         // =====================================================================
-        // DESCRIPTION
+        // NAME — invalid characters / SQL injection
         // =====================================================================
-        cases.add(bad("description", "empty string",
-                withDescription("Desc-Empty Co", "")));
-        cases.add(bad("description", "single space (blank after trim)",
-                withDescription("Desc-Space Co", " ")));
-        cases.add(bad("description", "whitespace only",
-                withDescription("Desc-WS Co", "  \t  ")));
-        cases.add(bad("description", "5001 chars (max + 1)",
-                withDescription("Desc-Long Co", repeat("d", 5001))));
-        cases.add(bad("description", "key missing",
-                without("description", base("Desc-Missing Co"))));
-        cases.add(bad("description", "explicit JSON null",
-                nulled("description", base("Desc-Null Co"))));
+        companies.add(invalidCompany("name", "SQL injection",
+                company("Company'; DROP TABLE companies;--", VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("name", "XSS injection",
+                company("<script>alert(1)</script>", VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS)));
 
         // =====================================================================
-        // EMAIL  (valid format AND length 5..50)
+        // CATEGORY — invalid / missing
         // =====================================================================
-        cases.add(bad("email", "empty string",
-                withEmail("Email-Empty Co", "")));
-        cases.add(bad("email", "too short (< 5 chars)",
-                withEmail("Email-Short Co", "a@b")));
-        cases.add(bad("email", "too long (> 50 chars)",
-                withEmail("Email-Long Co", repeat("a", 45) + "@example.com")));
-        cases.add(bad("email", "no @ symbol",
-                withEmail("Email-NoAt Co", "plainaddress")));
-        cases.add(bad("email", "missing domain",
-                withEmail("Email-NoDomain Co", "user@")));
-        cases.add(bad("email", "missing local part",
-                withEmail("Email-NoLocal Co", "@example.com")));
-        cases.add(bad("email", "double @",
-                withEmail("Email-DoubleAt Co", "user@@example.com")));
-        cases.add(bad("email", "space in address",
-                withEmail("Email-Space Co", "user name@example.com")));
-        cases.add(bad("email", "missing TLD",
-                withEmail("Email-NoTld Co", "user@example")));
-        cases.add(bad("email", "key missing",
-                without("email", base("Email-Missing Co"))));
-        cases.add(bad("email", "explicit JSON null",
-                nulled("email", base("Email-Null Co"))));
+        companies.add(invalidCompany("category", "empty string",
+                company(VALID_NAME, "", VALID_CREATOR, VALID_TAX_ID, VALID_DESCRIPTION,
+                        VALID_PHONE, VALID_FAX, VALID_REVENUE, VALID_EMAIL,
+                        validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("category", "invalid category",
+                company(VALID_NAME, "INVALID_CATEGORY", VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("category", "lowercase",
+                company(VALID_NAME, "supermercado", VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("category", "key missing",
+                without("category", company(VALID_NAME, "", VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
+
+        companies.add(invalidCompany("category", "explicit JSON null",
+                nulled("category", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
 
         // =====================================================================
-        // TAX ID NUMBER  (optional; if present must be exactly 9 digits)
+        // TAX ID — invalid format (contains letters or special chars beyond -)
         // =====================================================================
-        cases.add(bad("taxIdNumber", "8 digits (too short)",
-                withTaxId("Tax-Short Co", "12345678")));
-        cases.add(bad("taxIdNumber", "10 digits (too long)",
-                withTaxId("Tax-Long Co", "1234567890")));
-        cases.add(bad("taxIdNumber", "letters + dash (TIN-style, not 9 digits)",
-                withTaxId("Tax-Letters Co", "TIN-2034567890")));
-        cases.add(bad("taxIdNumber", "contains spaces",
-                withTaxId("Tax-Space Co", "12 345 678")));
-        cases.add(bad("taxIdNumber", "contains letters",
-                withTaxId("Tax-Alpha Co", "12345678A")));
-        cases.add(bad("taxIdNumber", "9 chars but with dash",
-                withTaxId("Tax-Dash Co", "1234-5678")));
+
+        companies.add(invalidCompany("taxIdNumber", "contains special chars",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, "123!@#456",
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("taxIdNumber", "SQL injection",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, "123'; DROP TABLE tax;--",
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
 
         // =====================================================================
-        // FAX NUMBER  (optional; if present letters/digits/'-' only)
+        // PHONE NUMBER — invalid format
         // =====================================================================
-        cases.add(bad("faxNumber", "contains '+'",
-                withFax("Fax-Plus Co", "+1-555-0235")));
-        cases.add(bad("faxNumber", "contains spaces",
-                withFax("Fax-Space Co", "555 0235")));
-        cases.add(bad("faxNumber", "contains '@'",
-                withFax("Fax-At Co", "fax@123")));
-        cases.add(bad("faxNumber", "contains parentheses",
-                withFax("Fax-Paren Co", "(238)5550235")));
+        companies.add(invalidCompany("phoneNumber", "too short",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, "123", VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("phoneNumber", "too long",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, repeat("1", 30), VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("phoneNumber", "invalid characters",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, "ABC-DEF-GHIJ", VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
 
         // =====================================================================
-        // REVENUE  (required, numeric)
+        // FAX NUMBER — invalid format
         // =====================================================================
-        cases.add(bad("revenue", "non-numeric string",
-                base("Rev-String Co").put("revenue", "not-a-number")));
-        cases.add(bad("revenue", "key missing",
-                without("revenue", base("Rev-Missing Co"))));
-        cases.add(bad("revenue", "explicit JSON null",
-                nulled("revenue", base("Rev-Null Co"))));
+        companies.add(invalidCompany("faxNumber", "contains letters",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, "ABC123", VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("faxNumber", "contains special chars",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, "123!@#", VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+
+        companies.add(invalidCompany("revenue", "non-numeric",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, "AAAA21331DC3",
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("revenue", "too large (overflow)",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, 1e308,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
 
         // =====================================================================
-        // STATUS  (required, enum)
+        // EMAIL — invalid / missing
         // =====================================================================
-        cases.add(bad("status", "empty string",
-                withStatus("Status-Empty Co", "")));
-        cases.add(bad("status", "value not in enum",
-                withStatus("Status-Unknown Co", "ACTIVE")));
-        cases.add(bad("status", "wrong case",
-                withStatus("Status-Case Co", "operating")));
-        cases.add(bad("status", "key missing",
-                without("status", base("Status-Missing Co"))));
-        cases.add(bad("status", "explicit JSON null",
-                nulled("status", base("Status-Null Co"))));
+        companies.add(invalidCompany("email", "empty string",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        "", validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("email", "no @ symbol",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        "plainaddress", validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("email", "missing domain",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        "user@", validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("email", "missing TLD",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        "user@example", validAddress(), VALID_STATUS)));
+
+        companies.add(invalidCompany("email", "key missing",
+                without("email", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
+
+        companies.add(invalidCompany("email", "explicit JSON null",
+                nulled("email", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
 
         // =====================================================================
-        // ADDRESS.island / city / zone  (required)
+        // ADDRESS — invalid / missing fields
         // =====================================================================
-        cases.add(bad("island", "empty string",
-                withAddress("Addr-IslandEmpty Co", address("", "Praia", "Plateau", "7600", "Rua Central 1"))));
-        cases.add(bad("island", "whitespace only",
-                withAddress("Addr-IslandWS Co", address("   ", "Praia", "Plateau", "7600", "Rua Central 1"))));
-        cases.add(bad("island", "key missing",
-                withAddress("Addr-IslandMissing Co", withoutKey("island",
-                        address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1")))));
-        cases.add(bad("island", "explicit JSON null",
-                withAddress("Addr-IslandNull Co", nulledKey("island",
-                        address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1")))));
 
-        cases.add(bad("city", "empty string",
-                withAddress("Addr-CityEmpty Co", address("SANTIAGO", "", "Plateau", "7600", "Rua Central 1"))));
-        cases.add(bad("city", "whitespace only",
-                withAddress("Addr-CityWS Co", address("SANTIAGO", "   ", "Plateau", "7600", "Rua Central 1"))));
-        cases.add(bad("city", "key missing",
-                withAddress("Addr-CityMissing Co", withoutKey("city",
-                        address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1")))));
-        cases.add(bad("city", "explicit JSON null",
-                withAddress("Addr-CityNull Co", nulledKey("city",
-                        address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1")))));
+        // Missing city
+        companies.add(invalidCompany("address.city", "empty city",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, address(VALID_STREET, "", VALID_POSTAL_CODE,
+                                VALID_ISLAND, VALID_ZONE), VALID_STATUS)));
 
-        cases.add(bad("zone", "empty string",
-                withAddress("Addr-ZoneEmpty Co", address("SANTIAGO", "Praia", "", "7600", "Rua Central 1"))));
-        cases.add(bad("zone", "whitespace only",
-                withAddress("Addr-ZoneWS Co", address("SANTIAGO", "Praia", "   ", "7600", "Rua Central 1"))));
-        cases.add(bad("zone", "key missing",
-                withAddress("Addr-ZoneMissing Co", withoutKey("zone",
-                        address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1")))));
-        cases.add(bad("zone", "explicit JSON null",
-                withAddress("Addr-ZoneNull Co", nulledKey("zone",
-                        address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1")))));
+
+        // Invalid island
+        companies.add(invalidCompany("address.island", "invalid island",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, address(VALID_STREET, VALID_CITY, VALID_POSTAL_CODE,
+                                "MOON", VALID_ZONE), VALID_STATUS)));
+
+        // Empty island
+        companies.add(invalidCompany("address.island", "empty island",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, address(VALID_STREET, VALID_CITY, VALID_POSTAL_CODE,
+                                "", VALID_ZONE), VALID_STATUS)));
+
+        // Missing address object
+        companies.add(invalidCompany("address", "address object missing",
+                without("address", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
+
+        // Address object null
+        companies.add(invalidCompany("address", "address object null",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, null, VALID_STATUS)));
 
         // =====================================================================
-        // ADDRESS object itself
+        // STATUS — invalid / missing
         // =====================================================================
-        cases.add(bad("address", "key missing",
-                without("address", base("Addr-Missing Co"))));
-        cases.add(bad("address", "explicit JSON null",
-                nulled("address", base("Addr-Null Co"))));
+        companies.add(invalidCompany("status", "invalid status",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), "INVALID_STATUS")));
+
+        companies.add(invalidCompany("status", "lowercase",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), "operating")));
+
+        companies.add(invalidCompany("status", "empty string",
+                company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), "")));
+
+        companies.add(invalidCompany("status", "key missing",
+                without("status", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
+
+        companies.add(invalidCompany("status", "explicit JSON null",
+                nulled("status", company(VALID_NAME, VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, VALID_DESCRIPTION, VALID_PHONE, VALID_FAX,
+                        VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS))));
 
         // =====================================================================
         // MULTIPLE violations at once
         // =====================================================================
-        cases.add(bad("multiple", "name empty + bad category + bad email + status missing",
-                without("status",
-                        company("", "NOPE", VALID_TAX, VALID_DESC, VALID_PHONE, VALID_FAX,
-                                VALID_REVENUE, "not-an-email", validAddress(), OPERATING))));
-        cases.add(bad("multiple", "all required fields empty + invalid address",
-                company("", "", "", "", "", VALID_FAX, VALID_REVENUE, "",
-                        address("", "", "", "", ""), "")));
-        cases.add(bad("multiple", "empty payload",
-                new JSONObject()));
+        JSONObject emptyCompany = new JSONObject();
+        companies.add(invalidCompany("multiple", "all fields missing", emptyCompany));
 
-        return cases;
-    }
+        companies.add(invalidCompany("multiple", "empty name + invalid category + invalid email",
+                company("", "INVALID", VALID_CREATOR, VALID_TAX_ID, VALID_DESCRIPTION,
+                        VALID_PHONE, VALID_FAX, VALID_REVENUE, "not-an-email",
+                        validAddress(), VALID_STATUS)));
 
-    // -------------------------------------------------------------------------
-    // Valid defaults (used to fill the non-targeted fields)
-    // -------------------------------------------------------------------------
-    private static final String VALID_DESC    = "Organic food production and distribution";
-    private static final String VALID_PHONE   = "+238-555-0100";
-    private static final String VALID_FAX     = "FAX-5550235";
-    private static final String VALID_TAX     = "123456789"; // 9 digits
-    private static final String VALID_EMAIL   = "info@greenleaf.com";
-    private static final double VALID_REVENUE = 1750000.75;
+        companies.add(invalidCompany("multiple", "SQL injection in name + XSS in description",
+                company("Company'; DROP TABLE companies;--", VALID_CATEGORY, VALID_CREATOR,
+                        VALID_TAX_ID, "<script>alert('xss')</script>", VALID_PHONE,
+                        VALID_FAX, VALID_REVENUE, VALID_EMAIL, validAddress(), VALID_STATUS)));
 
-    private static JSONObject validAddress() throws JSONException {
-        return address("SANTIAGO", "Praia", "Plateau", "7600", "Rua Central 1");
+        return companies;
     }
 
-    /** Fully valid company except the caller overrides one field afterwards. */
-    private static JSONObject base(String name) throws JSONException {
-        return company(name, SUPERMERCADO, VALID_TAX, VALID_DESC, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, VALID_EMAIL, validAddress(), OPERATING);
-    }
+    /**
+     * Returns payloads that will be rejected by Spring Security before reaching
+     * the application. These typically contain malicious characters in the URL path
+     * or query parameters that Spring Security blocks.
+     */
+    public List<JSONObject> invalidCompaniesForSecurityRejection() throws JSONException {
+        List<JSONObject> companies = new ArrayList<>();
 
-    // single-field override builders (everything else valid) ------------------
-    private static JSONObject companyNamed(String name) throws JSONException { return base(name); }
+        // Semicolon in company name (Spring Security blocks ";" in URL)
+        companies.add(invalidCompany("name", "contains semicolon (security rejection)",
+                company("Company; Evil", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
 
-    private static JSONObject withCategory(String name, String category) throws JSONException {
-        return company(name, category, VALID_TAX, VALID_DESC, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, VALID_EMAIL, validAddress(), OPERATING);
-    }
-    private static JSONObject withDescription(String name, String description) throws JSONException {
-        return company(name, SUPERMERCADO, VALID_TAX, description, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, VALID_EMAIL, validAddress(), OPERATING);
-    }
-    private static JSONObject withEmail(String name, String email) throws JSONException {
-        return company(name, SUPERMERCADO, VALID_TAX, VALID_DESC, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, email, validAddress(), OPERATING);
-    }
-    private static JSONObject withTaxId(String name, String taxId) throws JSONException {
-        return company(name, SUPERMERCADO, taxId, VALID_DESC, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, VALID_EMAIL, validAddress(), OPERATING);
-    }
-    private static JSONObject withFax(String name, String fax) throws JSONException {
-        return company(name, SUPERMERCADO, VALID_TAX, VALID_DESC, VALID_PHONE, fax,
-                VALID_REVENUE, VALID_EMAIL, validAddress(), OPERATING);
-    }
-    private static JSONObject withStatus(String name, String status) throws JSONException {
-        return company(name, SUPERMERCADO, VALID_TAX, VALID_DESC, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, VALID_EMAIL, validAddress(), status);
-    }
-    private static JSONObject withAddress(String name, JSONObject address) throws JSONException {
-        return company(name, SUPERMERCADO, VALID_TAX, VALID_DESC, VALID_PHONE, VALID_FAX,
-                VALID_REVENUE, VALID_EMAIL, address, OPERATING);
+        // Double slash in name (path traversal attempt)
+        companies.add(invalidCompany("name", "contains double slash (security rejection)",
+                company("//Company", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        // Backslash in name
+        companies.add(invalidCompany("name", "contains backslash (security rejection)",
+                company("Company\\Evil", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        // Percent encoding that might bypass filters
+        companies.add(invalidCompany("name", "contains %00 (null byte)",
+                company("Company%00Evil", VALID_CATEGORY, VALID_CREATOR, VALID_TAX_ID,
+                        VALID_DESCRIPTION, VALID_PHONE, VALID_FAX, VALID_REVENUE,
+                        VALID_EMAIL, validAddress(), VALID_STATUS)));
+
+        return companies;
     }
 
     // -------------------------------------------------------------------------
-    // Core helpers
+    // Helpers
     // -------------------------------------------------------------------------
 
-    /** Company body WITHOUT creatorUsername and WITHOUT address.state. */
-    private static JSONObject company(String name, String category, String taxIdNumber,
-                                      String description, String phoneNumber, String faxNumber,
-                                      double revenue, String email, JSONObject address,
-                                      String status) throws JSONException {
+    private static JSONObject company(String name, String category, String creatorUsername,
+                                      String taxIdNumber, String description, String phoneNumber,
+                                      String faxNumber, Object revenue, String email,
+                                      JSONObject address, String status) throws JSONException {
         return new JSONObject()
                 .put("name", name)
                 .put("category", category)
+                .put("creatorUsername", creatorUsername)
                 .put("taxIdNumber", taxIdNumber)
                 .put("description", description)
                 .put("phoneNumber", phoneNumber)
@@ -341,35 +411,39 @@ public class InvalidCompanyTestData {
                 .put("status", status);
     }
 
-    /** Address WITHOUT state. */
-    private static JSONObject address(String island, String city, String zone,
-                                      String postalCode, String street) throws JSONException {
-        return new JSONObject()
-                .put("island", island)
-                .put("city", city)
-                .put("zone", zone)
-                .put("postalCode", postalCode)
-                .put("street", street);
+    private static JSONObject address(String street, String city,
+                                      String postalCode, String island, String zone) throws JSONException {
+        JSONObject addr = new JSONObject();
+        if (street != null) addr.put("street", street);
+        if (city != null) addr.put("city", city);
+        if (postalCode != null) addr.put("postalCode", postalCode);
+        if (island != null) addr.put("island", island);
+        if (zone != null) addr.put("zone", zone);
+        return addr;
     }
 
-    private static InvalidCase bad(String field, String reason, JSONObject payload) {
-        return new InvalidCase(payload, field, reason);
+    private static JSONObject validAddress() throws JSONException {
+        return address(VALID_STREET, VALID_CITY, VALID_POSTAL_CODE, VALID_ISLAND, VALID_ZONE);
+    }
+
+    private static JSONObject invalidCompany(String field, String reason, JSONObject payload) {
+        // Add metadata to the payload for better test reporting
+        try {
+            payload.put("__expectedField", field);
+            payload.put("__reason", reason);
+        } catch (JSONException e) {
+            // Ignore
+        }
+        return payload;
     }
 
     private static JSONObject without(String key, JSONObject base) {
         base.remove(key);
         return base;
     }
+
     private static JSONObject nulled(String key, JSONObject base) throws JSONException {
         return base.put(key, JSONObject.NULL);
-    }
-    // same two, named distinctly for clarity when mutating the nested address
-    private static JSONObject withoutKey(String key, JSONObject obj) {
-        obj.remove(key);
-        return obj;
-    }
-    private static JSONObject nulledKey(String key, JSONObject obj) throws JSONException {
-        return obj.put(key, JSONObject.NULL);
     }
 
     private static String repeat(String unit, int count) {

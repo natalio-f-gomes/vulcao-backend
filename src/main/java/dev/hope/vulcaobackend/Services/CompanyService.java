@@ -114,12 +114,16 @@ public class CompanyService {
     }
 
     public ResponseEntity<?> isCompanyNameValid(String name){
-        debugInput(name);
+
         if(name == null || name.isEmpty()){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome da empresa deve ser preenchido.");
         }
+        debugInput(name);
         if(!name.matches(NAME_PATTERN)){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome da empresa é inválido. Utilize apenas letras e números.");
+        }
+        if(name.length() > 50){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome da empresa  não pode ter mais de 50 characteres");
         }
         return ResponseEntity.accepted().build();
     }
@@ -200,6 +204,12 @@ public class CompanyService {
         if(!companyEmail.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return companyEmail;
         }
+
+        ResponseEntity<?> companyAddress = isCompanyAddressValid(company.getAddress());
+        if(!companyAddress.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companyAddress;
+        }
+
 
         return ResponseEntity.accepted().build();
     }

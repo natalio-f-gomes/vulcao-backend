@@ -243,7 +243,7 @@ public class AuthController {
     @PostMapping("/employer/confirm/register/{mfaCode}")
     public ResponseEntity<?> registerEmployerConfirm(@PathVariable String mfaCode, @RequestBody EmployerModel newEmployer){
         ResponseEntity<?> mfaResponse = mfaService.confirmMFA(newEmployer.getEmail(), mfaCode);
-        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.OK)){
+        if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return mfaResponse;
         }
         ResponseEntity<?> nameResponse = authService.validateName(newEmployer.getFirstName(), newEmployer.getLastName());
