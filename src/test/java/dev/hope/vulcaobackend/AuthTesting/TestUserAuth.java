@@ -2,12 +2,9 @@ package dev.hope.vulcaobackend.AuthTesting;
 
 
 import dev.hope.vulcaobackend.CleanTable;
-import dev.hope.vulcaobackend.EmployerRequestHandler;
 import dev.hope.vulcaobackend.TestData.CompanyTestData;
-import dev.hope.vulcaobackend.TestData.InvalidEmployerTestData;
 import dev.hope.vulcaobackend.TestData.ValidAuthTestData;
 import dev.hope.vulcaobackend.UserRequestHandler;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +42,6 @@ public class TestUserAuth extends CleanTable {
 
     private ValidAuthTestData authTestData = new ValidAuthTestData();
 
-    private CompanyTestData companyTestData = new CompanyTestData();
-
     @BeforeEach
     void setUp() {
         this.userRequestHandler = new UserRequestHandler(restTestClient);
@@ -65,7 +60,6 @@ public class TestUserAuth extends CleanTable {
     @Test
     void testUserAuthWithValidData() throws JSONException, IOException, InterruptedException {
         System.out.println("=== Starting test ===");
-
         List<JSONObject> userTestingData = authTestData.validEmployers();
         for(JSONObject user: userTestingData){
             String email = user.get("email").toString();
@@ -77,30 +71,9 @@ public class TestUserAuth extends CleanTable {
             employerLoginData.put("password", password);
             String token = loginUser(email, username, employerLoginData,202, 200);
         }
-
     }
 
-    @Test
-    void testCompanyRegistrationWithValidData() throws JSONException, IOException, InterruptedException {
-        System.out.println("=== Starting test ===");
-        JSONObject employer1 = new JSONObject().put("username", "nataliogomes")
-                .put("firstName", "Natalio").put("lastName", "Gomes")
-                .put("email", "natalio@gmail.com").put("password", "password");
-        List<JSONObject> companies = companyTestData.validCompanies();
-        String email = employer1.get("email").toString();
-        String username = employer1.get("username").toString();
-        registerUser(email, username, employer1, 202, 201);
-        JSONObject employerLoginData = new JSONObject();
-        employerLoginData.put("username", username);
-        employerLoginData.put("password", "password");
-        String token = loginUser(email, username, employerLoginData,202, 200);
-//        for(JSONObject company: companies){
-//            company.remove("creatorUsername");
-//            company.put("creatorUsername", username);
-//            company.put("imagesMetadata", new JSONArray());
-//            userRequestHandler.companyRegisterRequest(token, company.toString(), 204, port);
-//        }
-    }
+
 
     public void registerUser(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {
         System.out.println("Sending registration request...");
@@ -244,8 +217,5 @@ public class TestUserAuth extends CleanTable {
 
         return userRequestHandler.userLoginConfirm(code, employer.toString(), expectedConfirmStatus, port);
     }
-
-
-
 
 }

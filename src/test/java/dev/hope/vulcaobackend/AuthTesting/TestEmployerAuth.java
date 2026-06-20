@@ -4,7 +4,8 @@ package dev.hope.vulcaobackend.AuthTesting;
 import dev.hope.vulcaobackend.CleanTable;
 import dev.hope.vulcaobackend.EmployerRequestHandler;
 import dev.hope.vulcaobackend.TestData.CompanyTestData;
-import dev.hope.vulcaobackend.TestData.InvalidEmployerTestData;
+import dev.hope.vulcaobackend.TestData.InvalidAuthRequestData;
+import dev.hope.vulcaobackend.TestData.InvalidAuthTestData;
 import dev.hope.vulcaobackend.TestData.ValidAuthTestData;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,7 +44,7 @@ public class TestEmployerAuth extends CleanTable {
     private EmployerRequestHandler employerRequestHandler;
 
     private ValidAuthTestData employerTestData = new ValidAuthTestData();
-    private InvalidEmployerTestData invalidEmployerTestData =new InvalidEmployerTestData();
+    private InvalidAuthRequestData invalidAuthRequestData =new InvalidAuthRequestData();
 
     private CompanyTestData companyTestData = new CompanyTestData();
 
@@ -102,24 +103,16 @@ public class TestEmployerAuth extends CleanTable {
         }
     }
 
-    //@Test TODO later
+   // @Test // TODO later
     void testEmployerAuthWithInvalidData() throws JSONException, IOException, InterruptedException {
         System.out.println("=== Starting test ===");
 
-        List<JSONObject> employerTestingData = invalidEmployerTestData.invalidEmployers();
-        for(JSONObject employer: employerTestingData){
-            try{
-                String email = employer.get("email").toString();
-                String username = employer.get("username").toString();
-                String password = employer.get("password").toString();
-                employerRequestHandler.employerRegisterRequest(email, username, 400, port);
-                employerRequestHandler.employerLoginRequest(username, 400, port);
-            }catch (JSONException e){
-                //
-            }
-
+        List<JSONObject> invalidCases = invalidAuthRequestData.invalidUsers();
+        for (JSONObject invalidCase : invalidCases) {
+            String email = invalidCase.get("email").toString();
+            String username = invalidCase.get("username").toString();
+            employerRequestHandler.employerRegisterRequest(email, username, 400, port);
         }
-
     }
 
     public void registerEmployer(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {

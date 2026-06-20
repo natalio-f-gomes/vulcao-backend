@@ -33,7 +33,7 @@ import java.util.List;
  *   - firstName/lastName length 201 -> too long
  * The matching just-valid edges (8, 50, 8, 200, 200) belong in the POSITIVE set.
  */
-public class InvalidEmployerTestData {
+public class InvalidAuthTestData {
 
     /** A single negative case: the payload, the field expected to fail, and why. */
     public static final class InvalidCase {
@@ -53,7 +53,7 @@ public class InvalidEmployerTestData {
         }
     }
 
-    public InvalidEmployerTestData() {
+    public InvalidAuthTestData() {
     }
 
     /** Just the bad payloads (drop-in parallel to EmployerTestData#validEmployers). */
@@ -73,7 +73,7 @@ public class InvalidEmployerTestData {
         // USERNAME — too short (length < 8)
         // =====================================================================
         cases.add(bad("username", "empty string (length 0)",
-                employer(" ", "Tiago", "Monteiro", "uname.short01@example.com", "DemoPass3101")));
+                employer(" a", "Tiago", "Monteiro", "uname.short01@example.com", "DemoPass3101")));
         cases.add(bad("username", "1 char",
                 employer("a", "Rita", "Figueiredo", "uname.short02@example.com", "DemoPass3202")));
         cases.add(bad("username", "2 chars",

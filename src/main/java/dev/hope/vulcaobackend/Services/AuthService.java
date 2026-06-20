@@ -116,6 +116,15 @@ public class AuthService {
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
+    public ResponseEntity<?> validatePassword(String password) {
+        if(password.length() < 8){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A palavra-passe tem que ter pelo menos 8 caracteres");
+        }
+        return ResponseEntity.accepted().build();
+
+    }
+
+
     public ResponseEntity<?> validateUsername(String username) {
         System.out.println("Username validation check: "+ username);
         System.out.println("Length: " + username.length());

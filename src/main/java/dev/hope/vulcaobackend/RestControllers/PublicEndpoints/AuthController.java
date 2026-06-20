@@ -157,6 +157,11 @@ public class AuthController {
             return usernameResponse;
         }
 
+        ResponseEntity<?> passwordResponse =authService.validatePassword(newUser.getPassword());
+        if(!passwordResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return passwordResponse;
+        }
+
         // Check if user already exists
         boolean entityExists = globalAccessControl.checkIfEntityExistsBeforeRegister(newUser.getUsername());
         System.out.println("User EXISTS: " + entityExists);
@@ -244,6 +249,10 @@ public class AuthController {
         ResponseEntity<?> nameResponse = authService.validateName(newEmployer.getFirstName(), newEmployer.getLastName());
         ResponseEntity<?> emailResponse =   authService.validateEmail(newEmployer.getEmail());
         ResponseEntity<?> usernameResponse =authService.validateUsername(newEmployer.getUsername());
+        ResponseEntity<?> passwordResponse =authService.validatePassword(newEmployer.getPassword());
+        if(!passwordResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return passwordResponse;
+        }
 
         if(!nameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return nameResponse;
@@ -254,6 +263,7 @@ public class AuthController {
         if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return usernameResponse;
         }
+
 
         boolean entityExists = globalAccessControl.checkIfEntityExistsBeforeRegister(
                 newEmployer.getUsername()
