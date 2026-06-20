@@ -2,10 +2,8 @@ package dev.hope.vulcaobackend.Services;
 
 
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
-import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
-import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -14,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 
 import java.util.List;
 import java.util.Objects;
@@ -23,21 +20,17 @@ import java.util.Objects;
 public class CartItemService {
 
     @Autowired private CartItemRepository cartItemRepository;
-    @Autowired
-    private GlobalAccessControl globalAccessControl;
+
     @Autowired
     private UserRepository userRepository;
 
 
     private static final Logger logger = LoggerFactory.getLogger(CartItemService.class);
-    @Autowired
-    private CompanyRepository companyRepository;
+
 
     public void addToCart(CartItemModel newItem, HttpServletRequest request, UserModel user){
         logger.debug("Entering addToCart with newItem: {}, user: {}", newItem, user != null ? user.getId() : "null");
-
         cartItemRepository.save(newItem);
-
         logger.debug("Successfully added item to cart with generated ID: {}", newItem.getId());
     }
 

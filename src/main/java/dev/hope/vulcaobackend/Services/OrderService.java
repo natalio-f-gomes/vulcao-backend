@@ -49,6 +49,7 @@ public class OrderService {
 
     AWSSESConfig sesService;
     OrderTemplate orderTemplate;
+
     @Autowired
     private CompanyMapper companyMapper;
 
@@ -75,6 +76,14 @@ public class OrderService {
                     throw new OrderValidationException("Cannot purchase " + item.getQuantity() + "x '" + product.getName() + "'. Only " + product.getStock() + " left in stock.");
                 }
             }
+            if (item.getItemType() == OfferingType.WEARABLE) {
+                WearableModel wearable = wearableRepository.findById(item.getId())
+                        .orElseThrow(() -> new OrderValidationException("The product '" + item.getId() + "' is no longer available."));
+
+                if (item.getQuantity() > wearable.getStock()) {
+                    throw new OrderValidationException("Cannot purchase " + item.getQuantity() + "x '" + wearable.getName() + "'. Only " + wearable.getStock() + " left in stock.");
+                }
+            }
         }
         return true;
     }
@@ -85,11 +94,20 @@ public class OrderService {
 
     }
 
+    public Double calculateWearableCost(String wearableId, Integer quantity){
+        WearableModel wearable = wearableRepository.findById(wearableId).orElseThrow(()-> new RuntimeException("Wearable with id "+ wearableId + " not found"));
+        return wearable.getPrice() * quantity;
+
+    }
+
     public Double calculateOrderCost(List<CartItemModel> items){
         Double totalCost = 0.0;
         for(CartItemModel item: items){
             if(item.getItemType().equals(OfferingType.PRODUCT)){
                 totalCost += calculateProductCost(item.getId(), item.getQuantity());
+            }
+            if(item.getItemType().equals(OfferingType.WEARABLE)){
+                totalCost += calculateWearableCost(item.getId(), item.getQuantity());
             }
 
         }
@@ -121,14 +139,25 @@ public class OrderService {
 
     public void saveOrderItem(CartItemModel cartItem, OrderModel order){
         String itemName = "";
-        Double price =0.0;
-        switch (cartItem.getItemType()){
-            case PRODUCT: ProductModel product = productRepository.findById(cartItem.getId()).orElseThrow(()-> new RuntimeException("There is not product with this id: "+ cartItem.getId()));
-                itemName = product.getName();
-                price = product.getPricePerUnit();
-                break;
+        Double price = 0.0;
+
+        List<OrderItemModel> orderItems = order.getOrderItems();
+        if (orderItems == null) {
+            orderItems = new ArrayList<>();
         }
-        List<OrderItemModel> orderItems = new ArrayList<>();
+
+        if (cartItem.getItemType().equals(OfferingType.PRODUCT)) {
+            ProductModel product = productRepository.findById(cartItem.getId())
+                    .orElseThrow(() -> new RuntimeException("Product not found with id: " + cartItem.getId()));
+            itemName = product.getName();
+            price = product.getPricePerUnit();
+        } else if (cartItem.getItemType().equals(OfferingType.WEARABLE)) {
+            WearableModel wearable = wearableRepository.findById(cartItem.getId())
+                    .orElseThrow(() -> new RuntimeException("Wearable not found with id: " + cartItem.getId()));
+            itemName = wearable.getName();
+            price = wearable.getPrice();
+        }
+
         OrderItemModel orderItem = new OrderItemModel();
         orderItem.setId(cartItem.getId());
         orderItem.setItemName(itemName);
@@ -138,13 +167,26 @@ public class OrderService {
         orderItem.setCompanyId(cartItem.getCompanyId());
         orderItem.setPriceAtPurchase(price);
         orderItem.onCreate();
+
         orderItemRepository.save(orderItem);
+
+        // Add to the existing list
         orderItems.add(orderItem);
+
+        // Update the order with the full list
         order.setOrderItems(orderItems);
         orderRepository.update(order);
     }
 
     public void sendNotification(String userEmail, String companyEmail, OrderModel order, String userNotification, String companyNotification){
+        System.out.println("=== ORDER ITEMS FROM DATABASE ===");
+        for (OrderItemModel item : order.getOrderItems()) {
+            System.out.println("Item ID: " + item.getId());
+            System.out.println("Item Type: " + item.getItemType());
+            System.out.println("Quantity: " + item.getQuantity());
+            System.out.println("---");
+        }
+
         //send email to user
         List<OrderTemplate.ProductOrder> productOrderList = getProductOrderDetails(order.getOrderItems());
         List<OrderTemplate.WearableOrder> wearableOrderList = getWearableOrderDetails(order.getOrderItems());
@@ -176,7 +218,6 @@ public class OrderService {
         String userNotification = "Notificação de encomenda da empresa " + company.getName();
         String companyNotification = "Notificação de encomenda de: "+ userFullName;
         sendNotification(user.getEmail(), company.getEmail(), newOrder, userNotification, companyNotification);
-
 
     }
 
@@ -328,11 +369,14 @@ public class OrderService {
     }
 
     public List<OrderTemplate.ProductOrder> getProductOrderDetails(List<OrderItemModel> orderItems){
+        System.out.println("Products from order");
         List<OrderTemplate.ProductOrder> products = new ArrayList<>();
         for (OrderItemModel item : orderItems) {
+            System.out.println("Product Offering type: " + item.getItemType());
             if (item.getItemType().equals(OfferingType.PRODUCT)) {
                 ProductModel product = productRepository.findById(item.getId())
                         .orElseThrow(() -> new RuntimeException("Product in this order not found with id: " + item.getId()));
+                System.out.println("Product name "+product.getName());
                 products.add(new OrderTemplate.ProductOrder(product, item.getQuantity()));
             }
         }
@@ -340,8 +384,10 @@ public class OrderService {
     }
 
     public List<OrderTemplate.WearableOrder>getWearableOrderDetails(List<OrderItemModel> orderItems){
+        System.out.println("Products from order");
         List<OrderTemplate.WearableOrder> wearables = new ArrayList<>();
         for (OrderItemModel item : orderItems) {
+            System.out.println("Wearable Offering type: " + item.getItemType());
              if (item.getItemType().equals(OfferingType.WEARABLE)) {
                 WearableModel wearable = wearableRepository.findById(item.getId())
                         .orElseThrow(() -> new RuntimeException("Wearable in this order not found with id: " + item.getId()));

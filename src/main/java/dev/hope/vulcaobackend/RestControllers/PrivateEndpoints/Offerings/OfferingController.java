@@ -254,13 +254,16 @@ public class OfferingController {
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         String randomId = generateNewIdForOffering(OfferingType.WEARABLE);
         newItem.setId(randomId);
-        wearableService.employerSaveWearable(newItem,userSession);
+        ResponseEntity<?> response =  wearableService.employerSaveWearable(newItem,userSession);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return uploadRequestService.requestWearablePresignedUrls(newItem);
     }
 
     // EMPLOYER UPDATE WEARABLE
     @PutMapping("/wearable/update/image")
-    public ResponseEntity<?> employerUpdateWearableImage(@RequestBody WearableModel wearable){
+    public ResponseEntity<?> updateWearableImage(@RequestBody WearableModel wearable){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         boolean employerExists = employerRepository.findByUsername(sessionUser).isPresent();
         boolean staffExists = staffRepository.findByUsername(sessionUser).isPresent();
@@ -289,7 +292,10 @@ public class OfferingController {
     @PutMapping("/wearable/employer/update/{id}")
     public ResponseEntity<?> employerUpdateWearable(@PathVariable String id, @RequestBody WearableModel newItem){
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        wearableService.employerUpdateProduct(id, newItem,userSession);
+        ResponseEntity<?> response =  wearableService.employerUpdateWearable(id, newItem,userSession);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
@@ -314,7 +320,7 @@ public class OfferingController {
     @DeleteMapping("/wearable/employer/delete/{id}")
     public ResponseEntity<?> employerDeleteWearable(@PathVariable String id){
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        wearableService.employerDeleteProduct(id,userSession);
+        wearableService.employerDeleteWearable(id,userSession);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 

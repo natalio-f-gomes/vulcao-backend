@@ -70,7 +70,7 @@ public class PublicOfferingsController {
 
     @GetMapping("/get/wearable/company/{companyId}")
     public ResponseEntity<List<WearableModel>> getWearablesByCompanyId(@PathVariable String companyId) {
-        System.out.println("Get products from company: "+ companyId+ " requested");
+        System.out.println("Get Wearables from company: "+ companyId+ " requested");
         return ResponseEntity.ok(wearableService.findByCompanyId(companyId));
     }
 

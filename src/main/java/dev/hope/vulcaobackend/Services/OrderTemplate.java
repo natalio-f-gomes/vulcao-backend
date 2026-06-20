@@ -146,7 +146,7 @@ public class OrderTemplate {
     // ── Wearables ───────────────────────────────────────────────────────────────
     public String getHtmlWearableOrderSection(List<WearableOrder> wearables, StringBuilder html) {
         html.append("<tr><td style='padding:24px 28px 8px;'>");
-        appendSectionTitle(html, "Wearables");
+        appendSectionTitle(html, "Vestíveis");
         html.append("<table role='presentation' width='100%' cellpadding='0' cellspacing='0'>");
 
         for (WearableOrder wo : wearables) {
@@ -292,6 +292,7 @@ public class OrderTemplate {
         StringBuilder html = new StringBuilder();
         getHtmlDocumentStructure(html);
         getHtmlOrderHeaderSection(order, html);
+        System.out.println("products=" + products.size() + " wearables=" + wearables.size());
 
         if (!products.isEmpty())  getHtmlProductOrderSection(products, html);
         if (!wearables.isEmpty()) getHtmlWearableOrderSection(wearables, html);

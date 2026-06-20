@@ -1,6 +1,8 @@
 package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
 import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
+import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
+import dev.hope.vulcaobackend.Models.Shopping.OrderItemModel;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.OrderRepository;
 import dev.hope.vulcaobackend.Services.OrderService;
@@ -20,6 +22,9 @@ public class OrderController {
 
     @PostMapping("/create")
     public ResponseEntity<?> placeOrder(@RequestBody OrderModel newOrder){
+        for(CartItemModel item: newOrder.getCartItems()){
+            System.out.println(item.getItemType() + " " + item.getQuantity());
+        }
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         orderService.placeOrder(sessionUser, newOrder);
         return ResponseEntity.status(HttpStatus.CREATED).build();

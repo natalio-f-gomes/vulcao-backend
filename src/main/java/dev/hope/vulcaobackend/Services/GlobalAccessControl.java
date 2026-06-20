@@ -70,40 +70,7 @@ public class GlobalAccessControl {
 
 
 
-    public ResponseEntity<?> isProductValid(ProductModel product) {
-        if (product.getName() == null || product.getName().isBlank() || product.getName().length() > 200) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("O nome do produto não pode estar vazio nem ultrapassar os 200 caracteres.");
-        }
-        ResponseEntity<?> response = companyService.isCompanyDescriptionValid(product.getName());
-        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("O nome do produto é invalida!");
-        }
-        if (product.getDescription() == null || product.getDescription().isBlank() || product.getDescription().length() > 2500) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("A descrição do produto não pode estar vazia nem ultrapassar os 2500 caracteres.");
-        }
-        if(!companyService.isCompanyDescriptionValid(product.getDescription()).getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("A descrição do produto é invalida");
-        }
-        if (product.getPricePerUnit() == null || product.getPricePerUnit() < 0) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("O preço do produto não pode ser nulo nem negativo.");
-        }
-        if (product.getStock() == null ||product.getStock() < 0) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("O stock do produto não podem ser nulos, negativos ou conter letras .");
-        }
 
-
-        // Se passou todas as validações de barreira:
-        log("PRODUTO " + product.getName() + " é Válido");
-
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body("O produto é válido e foi aceite com sucesso.");
-    }
 
     public boolean checkIfEntityExistsBeforeRegister(String username) {
         System.out.println("Username " + username);

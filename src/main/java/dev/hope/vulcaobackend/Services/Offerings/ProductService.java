@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static dev.hope.vulcaobackend.Services.CompanyService.debugInput;
+import static java.rmi.server.LogStream.log;
+
 @Slf4j
 @Service
 public class ProductService {
@@ -36,9 +39,9 @@ public class ProductService {
     @Autowired private ProductRepository productRepository;
 
     @Autowired private OfferingsMapper offeringsMapper;
-    @Autowired private GlobalAccessControl globalAccessControl;
 
 
+    final static String NAME_PATTERN = "^[\\p{L}0-9 +_.\\-/()&',]{0,500}$";
 
 
     public ResponseEntity<?> employerSaveProduct(ProductModel newProduct, String sessionUser, HttpServletRequest request){
@@ -54,7 +57,7 @@ public class ProductService {
         System.out.println("DEBUG CREATED_AT: " + newProduct.getCreatedAt());
         System.out.println("DEBUG UPDATED_AT: " + newProduct.getUpdatedAt());
 
-        ResponseEntity<?> response =   globalAccessControl.isProductValid(newProduct);
+        ResponseEntity<?> response =   isProductValid(newProduct);
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }
@@ -75,7 +78,7 @@ public class ProductService {
         System.out.println("DEBUG ID: " + newProduct.getId());
         System.out.println("DEBUG CREATED_AT: " + newProduct.getCreatedAt());
         System.out.println("DEBUG UPDATED_AT: " + newProduct.getUpdatedAt());
-        ResponseEntity<?> response =   globalAccessControl.isProductValid(newProduct);
+        ResponseEntity<?> response =   isProductValid(newProduct);
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }
@@ -93,7 +96,7 @@ public class ProductService {
         EmployerModel employer = employerRepository.findByUsername(sessionUser)
                 .orElseThrow(() -> new UsernameNotFoundException("Employer not found"));
 
-        ResponseEntity<?> response =   globalAccessControl.isProductValid(updatedProduct);
+        ResponseEntity<?> response =   isProductValid(updatedProduct);
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }
@@ -123,7 +126,7 @@ public class ProductService {
         }
         CompanyModel company = companyRepository.findById(updatedProduct.getCompanyId()).orElseThrow(()-> new RuntimeException("There is no company with this id"));
         ProductModel product = productRepository.findById(id).orElseThrow(()-> new RuntimeException("THERE IS NO PRODUCT WITH THIS ID"));
-        ResponseEntity<?> response =   globalAccessControl.isProductValid(updatedProduct);
+        ResponseEntity<?> response =   isProductValid(updatedProduct);
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }
@@ -181,6 +184,53 @@ public class ProductService {
 
     public List<ProductDTO> findProductsByName(String companyName){
         return productRepository.findByName(companyName).stream().map(offeringsMapper::transformToProductDTO).collect(Collectors.toList());
+    }
+
+    public ResponseEntity<?> isProductFieldValid(String field){
+        debugInput(field);
+        if(field == null || field.isEmpty()){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome do producto deve ser preenchido.");
+        }
+        if(!field.matches(NAME_PATTERN)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O nome da produto é inválido. Utilize apenas letras e números.");
+        }
+        return ResponseEntity.accepted().build();
+    }
+
+
+    public ResponseEntity<?> isProductValid(ProductModel product) {
+        if (product.getName() == null || product.getName().isBlank() || product.getName().length() > 200) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O nome do produto não pode estar vazio nem ultrapassar os 200 caracteres.");
+        }
+        ResponseEntity<?> response = isProductFieldValid(product.getName());
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O nome do produto é invalida!");
+        }
+        if (product.getDescription() == null || product.getDescription().isBlank() || product.getDescription().length() > 2500) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A descrição do produto não pode estar vazia nem ultrapassar os 2500 caracteres.");
+        }
+        if(!isProductFieldValid(product.getDescription()).getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A descrição do produto é invalida");
+        }
+        if (product.getPricePerUnit() == null || product.getPricePerUnit() < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O preço do produto não pode ser nulo nem negativo.");
+        }
+        if (product.getStock() == null ||product.getStock() < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("O stock do produto não podem ser nulos, negativos ou conter letras .");
+        }
+
+
+        // Se passou todas as validações de barreira:
+        log("PRODUTO " + product.getName() + " é Válido");
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body("O produto é válido e foi aceite com sucesso.");
     }
 
 }

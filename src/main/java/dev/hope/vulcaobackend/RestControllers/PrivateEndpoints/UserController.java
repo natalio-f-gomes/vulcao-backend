@@ -7,6 +7,7 @@ import dev.hope.vulcaobackend.DataTransferObjects.UserCredentials;
 import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.CompanyModel;
+import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
 import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
@@ -15,6 +16,7 @@ import dev.hope.vulcaobackend.Models.Properties.OfferingType;
 import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
+import dev.hope.vulcaobackend.Repositories.Offerings.WearableRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.Services.CartItemService;
 import dev.hope.vulcaobackend.Services.UserService;
@@ -51,6 +53,8 @@ public class UserController {
     private CartItemRepository cartItemRepository;
     @Autowired
     private CompanyRepository companyRepository;private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    @Autowired
+    private WearableRepository wearableRepository;
 
     @DeleteMapping("/delete/{userID}")
     public ResponseEntity<?> deleteUserById(@PathVariable String userID, HttpServletRequest request) throws AccessDeniedException {
@@ -122,19 +126,19 @@ public class UserController {
     }
 
     //=======CART ITEM =======
-    @PostMapping("/cart/add/product/{productId}/{productQuantity}/{companyId}")
-    public ResponseEntity<?> addItemToCart(@PathVariable String productId, @PathVariable Integer productQuantity, @PathVariable String companyId, HttpServletRequest request) {
+    @PostMapping("/cart/add/wearable/{itemId}/{quantity}/{companyId}")
+    public ResponseEntity<?> addWearableItemToCart(@PathVariable String itemId, @PathVariable Integer quantity, @PathVariable String companyId, HttpServletRequest request) {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        logger.debug("REST request to addItemToCart: productId={}, quantity={}, companyId={}, sessionUser={}", productId, productQuantity, companyId, sessionUser);
+        logger.debug("REST request to addWearableItemToCart: productId={}, quantity={}, companyId={}, sessionUser={}", itemId, quantity, companyId, sessionUser);
 
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(() -> {
             logger.debug("Access Denied: Session user '{}' not found in database.", sessionUser);
             return new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart");
         });
 
-        ProductModel product = productRepository.findById(productId).orElseThrow(() -> {
-            logger.debug("Add to cart failed: Product not found with id: {}", productId);
-            return new RuntimeException("There is no product with this id: " + productId);
+        WearableModel wearable = wearableRepository.findById(itemId).orElseThrow(() -> {
+            logger.debug("Add to cart failed: Wearable not found with id: {}", itemId);
+            return new RuntimeException("There is no Wearable with this id: " + itemId);
         });
 
         CompanyModel company = companyRepository.findById(companyId).orElseThrow(() -> {
@@ -143,27 +147,27 @@ public class UserController {
         });
 
         boolean isItemInCart = cartItemRepository
-                .findCartItem(user.getId(), companyId, productId).isPresent();
+                .findCartItem(user.getId(), companyId, itemId).isPresent();
         if (isItemInCart) {
-            CartItemModel item = cartItemRepository.findCartItem(user.getId(), companyId, productId).orElseThrow(()-> new RuntimeException("This item does not exists in the cart: "+ productId));
-            logger.debug("The product does exists in the cart: {} with the name of:{} ", productId, product.getName());
-            item.setQuantity(productQuantity);
+            CartItemModel item = cartItemRepository.findCartItem(user.getId(), companyId, itemId).orElseThrow(()-> new RuntimeException("This item does not exists in the cart: "+ itemId));
+            logger.debug("The Wearable does exists in the cart: {} with the name of:{} ", itemId, wearable.getName());
+            item.setQuantity(quantity);
             item.onUpdate();
             cartItemRepository.update(item);
             return ResponseEntity.ok(item);
         }
 
-        logger.debug("Creating new CartItemModel for product: {}", productId);
+        logger.debug("Creating new CartItemModel for product: {}", itemId);
         CartItemModel newItem = new CartItemModel();
-        newItem.setId(productId);
-        newItem.setQuantity(productQuantity);
-        newItem.setItemType(OfferingType.PRODUCT);
+        newItem.setId(itemId);
+        newItem.setQuantity(quantity);
+        newItem.setItemType(OfferingType.WEARABLE);
         newItem.setCompanyId(companyId);
         newItem.setUserId(user.getId());
         newItem.onCreate();
 
         cartItemService.addToCart(newItem, request, user);
-        logger.debug("Successfully added new product {} to user {}'s cart", productId, user.getId());
+        logger.debug("Successfully added new product {} to user {}'s cart", itemId, user.getId());
         return ResponseEntity.ok(newItem);
     }
 
@@ -224,6 +228,54 @@ public class UserController {
         logger.debug("Successfully removed item {} from database.", itemId);
         return ResponseEntity.ok().build();
     }
+
+
+    //=======CART ITEM =======
+    @PostMapping("/cart/add/product/{productId}/{productQuantity}/{companyId}")
+    public ResponseEntity<?> addProductItemToCart(@PathVariable String productId, @PathVariable Integer productQuantity, @PathVariable String companyId, HttpServletRequest request) {
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        logger.debug("REST request to addItemToCart: productId={}, quantity={}, companyId={}, sessionUser={}", productId, productQuantity, companyId, sessionUser);
+
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(() -> {
+            logger.debug("Access Denied: Session user '{}' not found in database.", sessionUser);
+            return new org.springframework.security.access.AccessDeniedException("You do not have access to the user cart");
+        });
+
+        ProductModel product = productRepository.findById(productId).orElseThrow(() -> {
+            logger.debug("Add to cart failed: Product not found with id: {}", productId);
+            return new RuntimeException("There is no product with this id: " + productId);
+        });
+
+        CompanyModel company = companyRepository.findById(companyId).orElseThrow(() -> {
+            logger.debug("Add to cart failed: Company not found with id: {}", companyId);
+            return new RuntimeException("Company with id: " + companyId + " not found");
+        });
+
+        boolean isItemInCart = cartItemRepository
+                .findCartItem(user.getId(), companyId, productId).isPresent();
+        if (isItemInCart) {
+            CartItemModel item = cartItemRepository.findCartItem(user.getId(), companyId, productId).orElseThrow(()-> new RuntimeException("This item does not exists in the cart: "+ productId));
+            logger.debug("The product does exists in the cart: {} with the name of:{} ", productId, product.getName());
+            item.setQuantity(productQuantity);
+            item.onUpdate();
+            cartItemRepository.update(item);
+            return ResponseEntity.ok(item);
+        }
+
+        logger.debug("Creating new CartItemModel for product: {}", productId);
+        CartItemModel newItem = new CartItemModel();
+        newItem.setId(productId);
+        newItem.setQuantity(productQuantity);
+        newItem.setItemType(OfferingType.PRODUCT);
+        newItem.setCompanyId(companyId);
+        newItem.setUserId(user.getId());
+        newItem.onCreate();
+
+        cartItemService.addToCart(newItem, request, user);
+        logger.debug("Successfully added new product {} to user {}'s cart", productId, user.getId());
+        return ResponseEntity.ok(newItem);
+    }
+
 }
 
 
