@@ -1,12 +1,16 @@
 package dev.hope.vulcaobackend.Services;
 
+import dev.hope.vulcaobackend.Configuration.AWSSESConfig;
 import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import dev.hope.vulcaobackend.DataTransferObjects.UserFullName;
+import dev.hope.vulcaobackend.Mappers.CompanyMapper;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
+import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
+import dev.hope.vulcaobackend.Models.Properties.CvIslands;
 import dev.hope.vulcaobackend.Models.Properties.OfferingType;
 import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
@@ -14,17 +18,17 @@ import dev.hope.vulcaobackend.Models.Shopping.OrderItemModel;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
+import dev.hope.vulcaobackend.Repositories.Offerings.WearableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.Order;
 
+import javax.swing.text.DateFormatter;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class OrderService {
@@ -40,8 +44,18 @@ public class OrderService {
     private StaffRepository staffRepository;
 
     @Autowired OrderItemRepository orderItemRepository;
+    @Autowired
+    private WearableRepository wearableRepository;
 
+    AWSSESConfig sesService;
+    OrderTemplate orderTemplate;
+    @Autowired
+    private CompanyMapper companyMapper;
 
+    public OrderService(AWSSESConfig service, OrderTemplate orderTemplate){
+        this.sesService = service;
+        this.orderTemplate = orderTemplate;
+    }
 
 
     public boolean validateOrderItems(List<CartItemModel> items, CompanyModel company, String userId) {
@@ -130,6 +144,16 @@ public class OrderService {
         orderRepository.update(order);
     }
 
+    public void sendNotification(String userEmail, String companyEmail, OrderModel order, String userNotification, String companyNotification){
+        //send email to user
+        List<OrderTemplate.ProductOrder> productOrderList = getProductOrderDetails(order.getOrderItems());
+        List<OrderTemplate.WearableOrder> wearableOrderList = getWearableOrderDetails(order.getOrderItems());
+        sesService.sendOrderNotification(userEmail, orderTemplate.buildHtmlOrderEmailForUser(order,productOrderList, wearableOrderList), userNotification);
+
+        //send email to company
+        sesService.sendOrderNotification(companyEmail, orderTemplate.buildHtmlOrderEmailForCompany(order,productOrderList, wearableOrderList), companyNotification);
+    }
+
 
     public void placeOrder(String sessionUser,  OrderModel newOrder){
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Username: "+ sessionUser + " not found"));
@@ -148,6 +172,11 @@ public class OrderService {
         for(CartItemModel cartItem: newOrder.getCartItems()){
             saveOrderItem(cartItem, newOrder);
         }
+        String userFullName = user.getFirstName() + " " + user.getLastName();
+        String userNotification = "Notificação de encomenda da empresa " + company.getName();
+        String companyNotification = "Notificação de encomenda de: "+ userFullName;
+        sendNotification(user.getEmail(), company.getEmail(), newOrder, userNotification, companyNotification);
+
 
     }
 
@@ -241,8 +270,6 @@ public class OrderService {
     }
 
 
-
-
     public List<OrderModel> findAllUserOrders(String sessionUser, String userId){
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
         if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
@@ -256,9 +283,17 @@ public class OrderService {
             if(company.getId().equals(order.getCompanyId())){
                 order.setStatus(status);
                 orderRepository.update(order);
+
+                String userFullName = employer.getFirstName() + " " + employer.getLastName();
+                String userNotification = "A empresa " + company.getName() + " alterou o status do seu pedido.";
+                String companyNotification = "O status do pedido de " + userFullName + " foi alterado.";
+                sendNotification(employer.getEmail(), company.getEmail(), order,userNotification, companyNotification );
                 return order;
             }
         }
+
+
+
         throw new AccessDeniedException("THIS EMPLOYER DOES NOT OWN  THE COMPANY: " + order.getCompanyId());
     }
 
@@ -276,6 +311,7 @@ public class OrderService {
     public OrderModel updateStatus(String orderId, OrderStatus status, String sessionUser) {
         OrderModel order = orderRepository.findById(orderId).orElseThrow(()-> new RuntimeException("ORDER NOT FOUND"));
         UserModel user = userRepository.findById(order.getUserId()).orElseThrow(()-> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
+        CompanyModel company = companyRepository.findById(order.getCompanyId()).orElseThrow(()-> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
 
         boolean employerLoggedIn = employerRepository.findByUsername(sessionUser).isPresent();
 
@@ -287,8 +323,32 @@ public class OrderService {
             return staffUpdateOrder(sessionUser, order, status );
 
         }
+
         return employerUpdateOrder(sessionUser, order, status );
-
-
     }
+
+    public List<OrderTemplate.ProductOrder> getProductOrderDetails(List<OrderItemModel> orderItems){
+        List<OrderTemplate.ProductOrder> products = new ArrayList<>();
+        for (OrderItemModel item : orderItems) {
+            if (item.getItemType().equals(OfferingType.PRODUCT)) {
+                ProductModel product = productRepository.findById(item.getId())
+                        .orElseThrow(() -> new RuntimeException("Product in this order not found with id: " + item.getId()));
+                products.add(new OrderTemplate.ProductOrder(product, item.getQuantity()));
+            }
+        }
+        return products;
+    }
+
+    public List<OrderTemplate.WearableOrder>getWearableOrderDetails(List<OrderItemModel> orderItems){
+        List<OrderTemplate.WearableOrder> wearables = new ArrayList<>();
+        for (OrderItemModel item : orderItems) {
+             if (item.getItemType().equals(OfferingType.WEARABLE)) {
+                WearableModel wearable = wearableRepository.findById(item.getId())
+                        .orElseThrow(() -> new RuntimeException("Wearable in this order not found with id: " + item.getId()));
+                wearables.add(new OrderTemplate.WearableOrder(wearable, item.getQuantity()));
+            }
+        }
+       return wearables;
+    }
+
 }

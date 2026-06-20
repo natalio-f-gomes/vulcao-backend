@@ -1,4 +1,4 @@
-package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
+package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints.Offerings;
 
 import dev.hope.vulcaobackend.DataTransferObjects.OfferingImageUploadRequest;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
@@ -32,7 +32,7 @@ import static dev.hope.vulcaobackend.Services.ImageUploadRequestService.MAX_IMAG
 
 @RequestMapping("/api/v1/offering")
 @RestController
-public class OfferingsController {
+public class OfferingController {
 
     @Autowired private ProductService productService;
     @Autowired
@@ -43,8 +43,6 @@ public class OfferingsController {
     @Value("${aws.s3.bucket}")
     private String BUCKET_NAME;
     private final String READ_BUCKET = "vulcao-app-images";
-
-
 
     public static final long MAX_BYTES = 5L * 1024 * 1024; // 5 MB guard
     @Autowired
@@ -250,7 +248,7 @@ public class OfferingsController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    // Add PRODUCT
+    // Add Wearable
     @PostMapping("/wearable/employer/add")
     public ResponseEntity<?> employerAddWearable(@RequestBody WearableModel newItem, HttpServletRequest request){
         String userSession = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
@@ -326,8 +324,4 @@ public class OfferingsController {
         wearableService.staffDeleteProduct(id,userSession);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
-
-
-
-
 }

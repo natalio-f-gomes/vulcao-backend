@@ -60,6 +60,7 @@ public class AuthController {
     @Autowired private MFAService mfaService;
 
     AWSSESConfig sesService;
+
     @Autowired
     private CompanyService companyService;
 

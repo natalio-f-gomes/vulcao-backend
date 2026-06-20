@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-import static dev.hope.vulcaobackend.RestControllers.PrivateEndpoints.OfferingsController.MAX_BYTES;
+import static dev.hope.vulcaobackend.RestControllers.PrivateEndpoints.Offerings.OfferingController.MAX_BYTES;
 import static dev.hope.vulcaobackend.Services.ImageUploadRequestService.MAX_IMAGES;
 
 @RestController
