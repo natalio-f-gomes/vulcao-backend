@@ -82,6 +82,13 @@ public class StaffService {
         return staffMapper.transformData(staff);
     }
 
+    public ResponseEntity<?> validateStaffPassword(StaffModel staff){
+        if(staff.getPassword().length() < 8 || staff.getPassword().length() > 50){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A palavra passe deve ter pelo menos 8 characteres");
+        }
+        return ResponseEntity.accepted().build();
+    }
+
     public ResponseEntity<?> validateStaff(StaffModel staff){
         ResponseEntity<?> nameResponse = authService.validateName(staff.getFirstName(), staff.getLastName());
         ResponseEntity<?> emailResponse =   authService.validateEmail(staff.getEmail());
@@ -104,7 +111,8 @@ public class StaffService {
 
         ResponseEntity<?> phoneResponse = companyService.isCompanyPhoneNumberValid(staff.getPhoneNumber());
         if (!phoneResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O número de telefone introduzido não é válido.");
+            System.out.println("staff phone number: " + staff.getPhoneNumber());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O número de telefone introduzido não é válido.\nTem que ser apenas numeros e minimo de 7 digitos");
         }
 
         ResponseEntity<?> departmentResponse = companyService.isCompanyDescriptionValid(staff.getDepartment());
@@ -117,9 +125,7 @@ public class StaffService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("O cargo/função introduzido não é válido.");
         }
 
-        if(staff.getPassword().length() < 8 || staff.getPassword().length() > 50){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("A palavra passe deve ter pelo menos 8 characteres");
-        }
+
         return ResponseEntity.accepted().build();
     }
 
@@ -133,6 +139,11 @@ public class StaffService {
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }
+        ResponseEntity<?> passwordResponse = validateStaffPassword(newStaff);
+        if(!passwordResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return passwordResponse;
+        }
+
         newStaff.setCompanyId(staffCompany.getId());
         newStaff.setCompanyName(staffCompany.getName());
         newStaff.setPassword(passwordEncoder.encode(newStaff.getPassword()));
@@ -204,6 +215,13 @@ public class StaffService {
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }
+        if(!updatedStaff.getPassword().isBlank()){
+            ResponseEntity<?> passwordResponse = validateStaffPassword(updatedStaff);
+            if(!passwordResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+                return passwordResponse;
+            }
+        }
+
         staff.setUsername(updatedStaff.getUsername());
         staff.setFirstName(updatedStaff.getFirstName());
         staff.setLastName(updatedStaff.getLastName());

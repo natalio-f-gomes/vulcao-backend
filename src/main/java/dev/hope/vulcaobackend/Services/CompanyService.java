@@ -262,6 +262,7 @@ public class CompanyService {
         company.setCategory(updatedCompany.getCategory());
         company.setTaxIdNumber(updatedCompany.getTaxIdNumber());
         company.setDescription(updatedCompany.getDescription());
+        company.setRevenue(updatedCompany.getRevenue());
         company.setPhoneNumber(updatedCompany.getPhoneNumber());
         company.setFaxNumber(updatedCompany.getFaxNumber());
         company.setEmail(updatedCompany.getEmail());
