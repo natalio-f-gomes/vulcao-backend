@@ -192,7 +192,7 @@ public class AuthController {
         authService.validateUsername(username);
         boolean usernameExists = userRepository.findByUsername(username).isPresent();
         if(!usernameExists){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This user does not exist!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Não existe cliente com esse nome de usuario");
         }
         UserModel user = userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("This user does not exist"));
         String randomCode = mfaService.save(user.getEmail());
@@ -317,8 +317,11 @@ public class AuthController {
         if(!usernameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return usernameResponse;
         }
-        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()->
-                new UsernameNotFoundException("Empresário(a) com este nome the usuário não foin encontrado: '" + username + "'"));
+        boolean employerExists = employerRepository.findByUsername(username).isPresent();
+        if(!employerExists){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresário(a) com este nome the usuário não foin encontrado: '" + username + "'");
+        }
+        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()-> new RuntimeException("Employer not found" + username));
         String randomCode = mfaService.save(employer.getEmail());
         sesService.sendCode(employer.getEmail(), randomCode);
         return ResponseEntity.accepted().build(); //202
