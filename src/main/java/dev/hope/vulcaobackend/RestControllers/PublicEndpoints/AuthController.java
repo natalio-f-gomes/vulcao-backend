@@ -18,6 +18,7 @@ import dev.hope.vulcaobackend.RestControllers.APIResponse;
 import dev.hope.vulcaobackend.Services.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -72,6 +74,7 @@ public class AuthController {
 
     @PostMapping("/user/password/reset/request/{email}")
     public ResponseEntity<?> UserResetPasswordRequest(@PathVariable String email) {
+
         authService.validateEmail(email);
 
         boolean usernameExists = userRepository.findByEmail(email).isPresent();
@@ -81,7 +84,6 @@ public class AuthController {
 
         String randomCode = mfaService.save(email);
         sesService.sendCode(email, randomCode);
-
         return ResponseEntity.status(HttpStatus.ACCEPTED).body("Enviámos um código de verificação para o seu e-mail.");
     }
 

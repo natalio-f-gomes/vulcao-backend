@@ -1,8 +1,6 @@
 package dev.hope.vulcaobackend.Repositories;
 
 
-import dev.hope.vulcaobackend.Models.AccountEntities.AuthModel;
-import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.MFAModel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -21,7 +19,6 @@ import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ResourceInUseException;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 
 @Repository

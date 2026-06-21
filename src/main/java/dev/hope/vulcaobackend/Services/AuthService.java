@@ -1,20 +1,13 @@
 package dev.hope.vulcaobackend.Services;
 
 
-import dev.hope.vulcaobackend.Models.AccountEntities.AuthModel;
-import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
-import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.AccessDeniedException;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 @Service

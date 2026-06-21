@@ -32,6 +32,7 @@ import java.util.List;
  *   - SQL injection, XSS, and other security attacks
  *   - Multiple violations combined
  */
+
 public class InvalidCompanyTestData {
 
     // ----- category enum values (exact strings, accents preserved) -----------
