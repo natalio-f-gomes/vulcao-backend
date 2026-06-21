@@ -35,6 +35,15 @@ import java.util.List;
  */
 public class CompanyTestData {
 
+    // ----- weekday keys (match the frontend WeekDays enum strings) -----------
+    private static final String SEGUNDA = "SEGUNDA_FEIRA";
+    private static final String TERCA   = "TERÇA_FEIRA";
+    private static final String QUARTA  = "QUARTA_FEIRA";
+    private static final String QUINTA  = "QUINTA_FEIRA";
+    private static final String SEXTA   = "SEXTA_FEIRA";
+    private static final String SABADO  = "SABADO";
+    private static final String DOMINGO = "DOMINGO";
+
     // ----- category enum values (exact strings, accents preserved) -----------
     private static final String LOJA_DE_CONVENIENCIA            = "LOJA_DE_CONVENIÊNCIA";
     private static final String SUPERMERCADO                    = "SUPERMERCADO";
@@ -63,6 +72,49 @@ public class CompanyTestData {
     public CompanyTestData() {
     }
 
+    private static JSONObject timeRange(String start, String end, boolean isClosed) throws JSONException {
+        return new JSONObject()
+                .put("start", start)
+                .put("end", end)
+                .put("isClosed", isClosed);
+    }
+
+    private static JSONObject weeklySchedule(boolean open247, JSONObject daySchedule) throws JSONException {
+        return new JSONObject()
+                .put("open247", open247)
+                .put("daySchedule", daySchedule);
+    }
+
+    /** Mon–Fri 09:00–18:00, Sat 09:00–13:00, Sun closed. */
+    private static JSONObject defaultSchedule() throws JSONException {
+        JSONObject days = new JSONObject()
+                .put(SEGUNDA, timeRange("09:00", "18:00", false))
+                .put(TERCA,   timeRange("09:00", "18:00", false))
+                .put(QUARTA,  timeRange("09:00", "18:00", false))
+                .put(QUINTA,  timeRange("09:00", "18:00", false))
+                .put(SEXTA,   timeRange("09:00", "18:00", false))
+                .put(SABADO,  timeRange("09:00", "13:00", false))
+                .put(DOMINGO, timeRange("00:00", "00:00", true));
+        return weeklySchedule(false, days);
+    }
+
+    /** Always open (open247 = true). */
+    private static JSONObject open247Schedule() throws JSONException {
+        JSONObject days = new JSONObject();
+        for (String d : new String[]{SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO}) {
+            days.put(d, timeRange("00:00", "23:59", false));
+        }
+        return weeklySchedule(true, days);
+    }
+
+    /** Every day closed — fits CLOSED companies. */
+    private static JSONObject allClosedSchedule() throws JSONException {
+        JSONObject days = new JSONObject();
+        for (String d : new String[]{SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO}) {
+            days.put(d, timeRange("00:00", "00:00", true));
+        }
+        return weeklySchedule(false, days);
+    }
     public List<JSONObject> validCompanies() throws JSONException {
         List<JSONObject> companies = new ArrayList<>();
 
@@ -261,6 +313,16 @@ public class CompanyTestData {
                                       String taxIdNumber, String description, String phoneNumber,
                                       String faxNumber, double revenue, String email,
                                       JSONObject address, String status) throws JSONException {
+        // default schedule for entries that don't specify one
+        return company(name, category, creatorUsername, taxIdNumber, description, phoneNumber,
+                faxNumber, revenue, email, address, status, defaultSchedule());
+    }
+
+    private static JSONObject company(String name, String category, String creatorUsername,
+                                      String taxIdNumber, String description, String phoneNumber,
+                                      String faxNumber, double revenue, String email,
+                                      JSONObject address, String status,
+                                      JSONObject weeklySchedule) throws JSONException {
         return new JSONObject()
                 .put("name", name)
                 .put("category", category)
@@ -272,9 +334,8 @@ public class CompanyTestData {
                 .put("revenue", revenue)
                 .put("email", email)
                 .put("address", address)
-
-                .put("status", status);
-
+                .put("status", status)
+                .put("weeklySchedule", weeklySchedule);
     }
 
     private static JSONObject address(String street, String city,

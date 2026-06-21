@@ -26,12 +26,11 @@ public class CompanyMapper {
         dto.setStatus(company.getStatus());
         dto.setCreatedAt(company.getCreatedAt());
         dto.setUpdatedAt(company.getUpdatedAt());
-        dto.setCreatorUsername(company.getCreatorUsername());
+        dto.setCreatorId(company.getCreatorId());
         dto.setRevenue(company.getRevenue());
         dto.setImgS3UrlKeys(company.getImgS3UrlKeys());
         dto.setOrderList(company.getOrderList());
+        dto.setWeeklySchedule(company.getWeeklySchedule());
         return dto;
-
-
     }
 }

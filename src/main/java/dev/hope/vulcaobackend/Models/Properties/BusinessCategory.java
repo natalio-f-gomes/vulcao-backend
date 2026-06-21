@@ -21,5 +21,8 @@ public enum BusinessCategory {
     // ===== OUTROS FORMATOS DE VENDA DE BENS =====
     MERCADO_ABASTECEDOR,
     LOJA_EM_SEGUNDA_MÃO,
-    OUTROS
+
+    OUTROS,
+
+    RESTAURANTE
 }

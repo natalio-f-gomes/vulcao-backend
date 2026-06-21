@@ -28,9 +28,9 @@ public class PublicCompanyController {
         return companyService.findCompanyByName(companyName);
     }
 
-    @GetMapping("/get/creatorName")
-    public List<CompanyDTO> getAllCompaniesByCreatorUsername(@RequestParam String creatorName){
-        return companyService.findCompanyByCreatorUsername(creatorName);
+    @GetMapping("/get/creatorId")
+    public List<CompanyDTO> getAllCompaniesByCreatorUsername(@RequestParam String creatorId){
+        return companyService.findCompanyByCreatorId(creatorId);
     }
 
 

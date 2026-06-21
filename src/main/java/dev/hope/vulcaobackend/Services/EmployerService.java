@@ -139,7 +139,7 @@ public class EmployerService {
     public List<CompanyDTO> listMyCompanies(String username){
         EmployerModel employer = employerRepository.findByUsername(username)
                 .orElseThrow(()-> new UsernameNotFoundException("Employer with username "+ username + " not found"));
-        return companyRepository.findByCreatorUsername(employer.getUsername()).stream()
+        return companyRepository.findByCreatorId(employer.getId()).stream()
                 .map(companyMapper::transformData)
                 .collect(Collectors.toList());
     }

@@ -2,9 +2,7 @@ package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 
 import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
 import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
-import dev.hope.vulcaobackend.Models.Shopping.OrderItemModel;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
-import dev.hope.vulcaobackend.Repositories.OrderRepository;
 import dev.hope.vulcaobackend.Services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,20 +24,23 @@ public class OrderController {
             System.out.println(item.getItemType() + " " + item.getQuantity());
         }
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        orderService.placeOrder(sessionUser, newOrder);
+        ResponseEntity<?> response =  orderService.placeOrder(sessionUser, newOrder);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return  response;
+        }
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/get/{trackId}/{companyId}")
     public ResponseEntity<?> findOrderByTrackId(@PathVariable String trackId, @PathVariable String companyId){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return ResponseEntity.ok(orderService.findOrderByTrackId(companyId, sessionUser, trackId));
+        return orderService.findOrderByTrackId(companyId, sessionUser, trackId);
     }
 
     @GetMapping("/get/{companyId}/{userId}/{orderId}")
     public ResponseEntity<?> findOrder(@PathVariable String companyId, @PathVariable String userId, @PathVariable String orderId){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        return ResponseEntity.ok(orderService.findOrder(companyId, userId, orderId, sessionUser));
+        return orderService.findOrder(companyId, userId, orderId, sessionUser);
     }
 
     @GetMapping("/get/all/{userId}/{companyId}")

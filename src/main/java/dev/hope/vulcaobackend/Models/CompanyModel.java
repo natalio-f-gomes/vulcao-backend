@@ -4,8 +4,10 @@ package dev.hope.vulcaobackend.Models;
 import dev.hope.vulcaobackend.DataTransferObjects.ImageMetadata;
 import dev.hope.vulcaobackend.Models.Common.Address;
 import dev.hope.vulcaobackend.Models.Common.BaseModelEntities;
+import dev.hope.vulcaobackend.Models.Common.WeeklySchedule;
 import dev.hope.vulcaobackend.Models.Properties.BusinessCategory;
 import dev.hope.vulcaobackend.Models.Properties.CompanyStatuses;
+import dev.hope.vulcaobackend.Models.Properties.WeekDays;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
@@ -50,14 +53,21 @@ public class CompanyModel extends BaseModelEntities {
     private Address address;
     private CompanyStatuses status;
 
+    private WeeklySchedule weeklySchedule;
+
     @NotBlank
-    private String creatorUsername;
+    private String creatorId;
+
+    @DynamoDbAttribute("weeklySchedule")
+    public WeeklySchedule getWeeklySchedule() {
+        return weeklySchedule;
+    }
 
     @DynamoDbSecondaryPartitionKey(indexNames = "company-category-index")
     public BusinessCategory getCategory() { return category; }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "company-creator-index")
-    public String getCreatorUsername() { return creatorUsername; }
+    @DynamoDbSecondaryPartitionKey(indexNames = "company-creator-id")
+    public String getCreatorId() { return creatorId; }
 
     @DynamoDbSecondaryPartitionKey(indexNames = "company-name-index")
     public String getName() { return name; }

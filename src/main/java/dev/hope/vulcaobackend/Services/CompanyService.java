@@ -6,8 +6,10 @@ import dev.hope.vulcaobackend.DataTransferObjects.CompanyDTO;
 import dev.hope.vulcaobackend.Mappers.CompanyMapper;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
+import dev.hope.vulcaobackend.Models.Common.WeeklySchedule;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Properties.CompanyStatuses;
+import dev.hope.vulcaobackend.Models.Properties.WeekDays;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -170,6 +174,12 @@ public class CompanyService {
         return ResponseEntity.accepted().build();
     }
 
+    public static ResponseEntity<?> isCompanyScheduleValid(WeeklySchedule schedule){
+        debugInput(schedule.toString());
+
+        return ResponseEntity.accepted().build();
+    }
+
     public static void debugInput(String field){
         System.out.println(field.toUpperCase() + "=[" + field + "] len=" + (field == null ? -1 : field.length()));
     }
@@ -210,6 +220,10 @@ public class CompanyService {
             return companyAddress;
         }
 
+        ResponseEntity<?> companySchedule = isCompanyScheduleValid(company.getWeeklySchedule());
+        if(!companySchedule.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return companySchedule;
+        }
 
         return ResponseEntity.accepted().build();
     }
@@ -221,8 +235,8 @@ public class CompanyService {
     }
 
 
-    public List<CompanyDTO> findCompanyByCreatorUsername(String creator){
-        return companyRepository.findByCreatorUsername(creator).stream().map(companyMapper::transformData).collect(Collectors.toList());
+    public List<CompanyDTO> findCompanyByCreatorId(String creator){
+        return companyRepository.findByCreatorId(creator).stream().map(companyMapper::transformData).collect(Collectors.toList());
     }
 
     public List<CompanyDTO> findCompanyByCategory(String category){
@@ -245,17 +259,6 @@ public class CompanyService {
     }
 
 
-    public void deleteCompanyById(String id, String username){
-        CompanyModel company = companyRepository.findById(id).orElseThrow(()
-                -> new RuntimeException("Company " + id + " not found"));
-        String owner = company.getCreatorUsername();
-        if (!owner.equals(username)) {
-            throw new RuntimeException("Access Denied: You are not the owner of this company.");
-        }
-        companyRepository.deleteCompanyById(company);
-        System.out.println("SUCCESS: Company deleted.");
-
-    }
 
     public ResponseEntity<?> updateCompany(String id, CompanyDTO updatedCompany){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
@@ -278,6 +281,7 @@ public class CompanyService {
         company.setEmail(updatedCompany.getEmail());
         company.setAddress(updatedCompany.getAddress());
         company.setStatus(updatedCompany.getStatus());
+        company.setWeeklySchedule(updatedCompany.getWeeklySchedule());
         company.onUpdate();
         companyRepository.update(company);
         return ResponseEntity.accepted().build();
@@ -331,6 +335,22 @@ public class CompanyService {
 
     }
 
+    public ResponseEntity<?> updateCompanyWeeklySchedule(String id, WeeklySchedule schedule){
+        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Este empresário(a) " + sessionUser +" não existe!"));
+        CompanyModel company = companyRepository.findById(id).orElseThrow(()-> new RuntimeException("Não existe nenhuma empresa com este ID."));
+
+        ResponseEntity<?> scheduleResponse = isCompanyScheduleValid(schedule);
+        if(!scheduleResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return scheduleResponse;
+        }
+
+        company.setWeeklySchedule(schedule);
+        company.onUpdate();
+        companyRepository.update(company);
+        return ResponseEntity.accepted().build();
+    }
+
 
     public ResponseEntity<?> updateCompanyAboutInfo(String id, CompanyAboutInfo info){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
@@ -360,7 +380,7 @@ public class CompanyService {
         return ResponseEntity.accepted().build();
     }
 
-    public ResponseEntity<?> registerBusiness(CompanyModel newBusiness) throws AccessDeniedException {
+    public ResponseEntity<?> registerBusiness(CompanyModel newBusiness) {
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         System.out.println("DEBUG: ATTEMPT TO REGISTER A COMPANY: Session User " + sessionUser);
         ResponseEntity<?> companyExists = doesTheCompanyAlreadyExist(newBusiness);
@@ -376,7 +396,7 @@ public class CompanyService {
         EmployerModel creator = employerRepository.findByUsername(sessionUser).orElseThrow(()
                 -> new UsernameNotFoundException("Employer " + sessionUser + " not found"));
         System.out.println("DEBUG:: Register Company Method-> Username: " + creator.getUsername() );
-        newBusiness.setCreatorUsername(creator.getUsername());
+        newBusiness.setCreatorId(creator.getId());
         newBusiness.onCreate();
 
         companyRepository.save(newBusiness);

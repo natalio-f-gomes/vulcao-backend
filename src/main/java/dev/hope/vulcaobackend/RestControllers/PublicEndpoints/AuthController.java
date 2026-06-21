@@ -14,7 +14,6 @@ import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
 import dev.hope.vulcaobackend.Repositories.EmployerRepository;
 import dev.hope.vulcaobackend.Repositories.StaffRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
-import dev.hope.vulcaobackend.RestControllers.APIResponse;
 import dev.hope.vulcaobackend.Services.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -405,14 +404,12 @@ public class AuthController {
     public ResponseEntity<?> registerStaff(@RequestBody StaffModel newStaff){
 
         if(newStaff.getCompanyId().isBlank()){
-            return ResponseEntity.badRequest()
-                    .body(new APIResponse(null, "Company ID is required",400, LocalDateTime.now()));
+            return ResponseEntity.badRequest().body("Company ID is required");
         }
 
 
         if(globalAccessControl.checkIfEntityExistsBeforeRegister(newStaff.getUsername())){
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new APIResponse(null, "User already exists", 409, LocalDateTime.now()));
+            return ResponseEntity.badRequest().body("There is a user with this username already");
         }
         try {
             String staffId = globalAccessControl.generateNewIdForStaff();

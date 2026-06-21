@@ -4,6 +4,7 @@ package dev.hope.vulcaobackend.RestControllers.PrivateEndpoints;
 import dev.hope.vulcaobackend.DataTransferObjects.*;
 import dev.hope.vulcaobackend.Models.AccountEntities.EmployerModel;
 import dev.hope.vulcaobackend.Models.Common.Address;
+import dev.hope.vulcaobackend.Models.Common.WeeklySchedule;
 import dev.hope.vulcaobackend.Models.CompanyModel;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
 import dev.hope.vulcaobackend.Repositories.CompanyRepository;
@@ -152,18 +153,12 @@ public class CompanyController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerBusiness(@Valid @RequestBody CompanyModel newBusiness) {
-        try {
-            newBusiness.setId(generateNewIdForCompany());
-            ResponseEntity<?> registration = companyService.registerBusiness(newBusiness);
-            if (!registration.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
-                return registration;
-            }
-            return imageUploadRequestService.requestCompanyPresignedUrlsFor(newBusiness);
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        } catch (ResponseStatusException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        newBusiness.setId(generateNewIdForCompany());
+        ResponseEntity<?> registration = companyService.registerBusiness(newBusiness);
+        if (!registration.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
+            return registration;
         }
+        return imageUploadRequestService.requestCompanyPresignedUrlsFor(newBusiness);
     }
 
     @PutMapping("/update/{id}")
@@ -188,6 +183,16 @@ public class CompanyController {
     @PutMapping("/update/description/{id}")
     public ResponseEntity<?> updateBusinessDescription(@RequestBody CompanyAboutInfo info, @PathVariable String id){
         ResponseEntity<?> response = companyService.updateCompanyAboutInfo(id, info);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+
+    @PutMapping("/update/weekly-schedule/{id}")
+    public ResponseEntity<?> updateBusinessSchedule(@RequestBody WeeklySchedule schedule, @PathVariable String id){
+        ResponseEntity<?> response = companyService.updateCompanyWeeklySchedule(id, schedule);
         if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return response;
         }

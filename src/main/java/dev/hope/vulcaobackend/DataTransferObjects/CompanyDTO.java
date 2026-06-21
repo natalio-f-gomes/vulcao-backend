@@ -3,6 +3,7 @@ package dev.hope.vulcaobackend.DataTransferObjects;
 
 import dev.hope.vulcaobackend.DataTransferObjects.Common.BaseModelDTO;
 import dev.hope.vulcaobackend.Models.Common.Address;
+import dev.hope.vulcaobackend.Models.Common.WeeklySchedule;
 import dev.hope.vulcaobackend.Models.Properties.BusinessCategory;
 import dev.hope.vulcaobackend.Models.Properties.CompanyStatuses;
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
@@ -31,8 +32,9 @@ public class CompanyDTO extends BaseModelDTO {
     private String email;
     private Address address;
     private CompanyStatuses status;
-    private String creatorUsername;
+    private String creatorId;
     private List<String> imgS3UrlKeys;
     private List<OrderModel> orderList;
+    private WeeklySchedule weeklySchedule;
 
 }

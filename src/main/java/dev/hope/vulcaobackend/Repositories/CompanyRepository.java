@@ -2,14 +2,12 @@ package dev.hope.vulcaobackend.Repositories;
 
 
 import dev.hope.vulcaobackend.Models.CompanyModel;
+import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.CreateTableEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.EnhancedGlobalSecondaryIndex;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
@@ -43,11 +41,11 @@ public class CompanyRepository {
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("company-creator-index")
+                                    .indexName("company-name-index")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("company-name-index")
+                                    .indexName("company-creator-id")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
@@ -114,14 +112,16 @@ public class CompanyRepository {
     }
 
 
-    public List<CompanyModel> findByCreatorUsername(String username) {
-        var result = companyTable.index("company-creator-index")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(username)))
+
+    public List<CompanyModel> findByCreatorId(String creatorId) {
+        var result = companyTable.index( "company-creator-id")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(creatorId)))
                 .stream()
                 .flatMap(page -> page.items().stream()).toList();
-        System.out.println("findByUsername({"+username+"}) -> {"+result+"}" );
+        System.out.println("findByCreatorId({"+creatorId+"}) -> {"+result+"}" );
         return result;
     }
+
 
 
     public List<CompanyModel> findByCategory(String category) {
@@ -143,5 +143,7 @@ public class CompanyRepository {
                 .stream()
                 .toList();
     }
+
+
 
 }

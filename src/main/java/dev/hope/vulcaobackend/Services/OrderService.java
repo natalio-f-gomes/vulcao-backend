@@ -20,6 +20,8 @@ import dev.hope.vulcaobackend.Repositories.*;
 import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
 import dev.hope.vulcaobackend.Repositories.Offerings.WearableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -59,33 +61,44 @@ public class OrderService {
     }
 
 
-    public boolean validateOrderItems(List<CartItemModel> items, CompanyModel company, String userId) {
-
+    public ResponseEntity<?> validateOrderItems(List<CartItemModel> items, CompanyModel company, String userId) {
         for (CartItemModel item : items) {
             if (!item.getCompanyId().equals(company.getId())) {
-                throw new OrderValidationException("Item '" + item.getId() + "' does not belong to the selected company.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("O item '" + item.getId() + "' não pertence à empresa selecionada.");
             }
             if (!item.getUserId().equals(userId)) {
-                throw new OrderValidationException("Authentication mismatch: You do not own the cart item for '" + item.getId() + "'.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Incompatibilidade de autenticação: Não é o proprietário do item de carrinho '" + item.getId() + "'.");
             }
             if (item.getItemType() == OfferingType.PRODUCT) {
-                ProductModel product = productRepository.findById(item.getId())
-                        .orElseThrow(() -> new OrderValidationException("The product '" + item.getId() + "' is no longer available."));
+                ProductModel product = productRepository.findById(item.getId()).orElse(null);
+
+                if (product == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("O produto '" + item.getId() + "' já não está disponível.");
+                }
 
                 if (item.getQuantity() > product.getStock()) {
-                    throw new OrderValidationException("Cannot purchase " + item.getQuantity() + "x '" + product.getName() + "'. Only " + product.getStock() + " left in stock.");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Não é possível comprar " + item.getQuantity() + "x '" + product.getName() + "'. Apenas restam " + product.getStock() + " em stock.");
                 }
             }
             if (item.getItemType() == OfferingType.WEARABLE) {
-                WearableModel wearable = wearableRepository.findById(item.getId())
-                        .orElseThrow(() -> new OrderValidationException("The product '" + item.getId() + "' is no longer available."));
+                WearableModel wearable = wearableRepository.findById(item.getId()).orElse(null);
+
+                if (wearable == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("O produto '" + item.getId() + "' já não está disponível.");
+                }
 
                 if (item.getQuantity() > wearable.getStock()) {
-                    throw new OrderValidationException("Cannot purchase " + item.getQuantity() + "x '" + wearable.getName() + "'. Only " + wearable.getStock() + " left in stock.");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("Não é possível comprar " + item.getQuantity() + "x '" + wearable.getName() + "'. Apenas restam " + wearable.getStock() + " em stock.");
                 }
             }
         }
-        return true;
+        return ResponseEntity.accepted().build();
     }
 
     public Double calculateProductCost(String productId, Integer quantity){
@@ -197,13 +210,16 @@ public class OrderService {
     }
 
 
-    public void placeOrder(String sessionUser,  OrderModel newOrder){
+    public ResponseEntity<?> placeOrder(String sessionUser,  OrderModel newOrder){
         UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Username: "+ sessionUser + " not found"));
         if(!newOrder.getUserId().equals(user.getId())){
             throw new AccessDeniedException("You do not have the permissions to handle this operation");
         }
         CompanyModel company = companyRepository.findById(newOrder.getCompanyId()).orElseThrow(()-> new RuntimeException("Company With ID: "+ newOrder.getCompanyId() + " not found"));
-        validateOrderItems(newOrder.getCartItems(), company, user.getId());
+        ResponseEntity<?> response = validateOrderItems(newOrder.getCartItems(), company, user.getId());
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         newOrder.setStatus(OrderStatus.SENT);
         Double totalCost = calculateOrderCost(newOrder.getCartItems());
         newOrder.setId(generateOrderId());
@@ -218,6 +234,7 @@ public class OrderService {
         String userNotification = "Notificação de encomenda da empresa " + company.getName();
         String companyNotification = "Notificação de encomenda de: "+ userFullName;
         sendNotification(user.getEmail(), company.getEmail(), newOrder, userNotification, companyNotification);
+        return ResponseEntity.accepted().build();
 
     }
 
@@ -227,47 +244,78 @@ public class OrderService {
     }
 
 
-    private boolean validateFindOrder(boolean isStaffPresent,boolean isEmployerPresent, boolean isUserPresent,String sessionUser, String companyId ){
-        CompanyModel company = companyRepository.findById(companyId).orElseThrow(()-> new RuntimeException("Ther eis no company with this id: " + companyId));
-        if(!isStaffPresent && !isEmployerPresent && !isUserPresent){
-            throw new OrderValidationException("Neither the User, staff of employer exists to get this order");
+    private ResponseEntity<?> validateFindOrder(boolean isStaffPresent, boolean isEmployerPresent, boolean isUserPresent, String sessionUser, String companyId) {
+        CompanyModel company = companyRepository.findById(companyId).orElse(null);
+        if (company == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Não existe nenhuma empresa com o ID: " + companyId);
         }
+
+        if (!isStaffPresent && !isEmployerPresent && !isUserPresent) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Acesso negado: Nem o Utilizador, Funcionário ou Empregador associados existem para consultar este pedido.");
+        }
+
         boolean found = false;
 
-        if(isEmployerPresent){
-            EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Employer with username: "+ sessionUser + " not found"));
-            List<CompanyDTO> companiesRegistered =  employer.getCompaniesRegistered();
+        if (isEmployerPresent) {
+            EmployerModel employer = employerRepository.findByUsername(sessionUser).orElse(null);
+            if (employer == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Empregador com o nome de utilizador '" + sessionUser + "' não foi encontrado.");
+            }
+
+            List<CompanyDTO> companiesRegistered = employer.getCompaniesRegistered();
             for (CompanyDTO biz : companiesRegistered) {
                 if (biz.getId().equals(company.getId())) {
                     found = true;
                     break;
                 }
             }
-            if(!found){throw new OrderValidationException("The employer " + employer.getUsername() + " does not own the company " + company.getName());}
-        }
-        if(isStaffPresent){
-            StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Employer with username: "+ sessionUser + " not found"));
-            if (!company.getId().equals(staff.getCompanyId())) {
-                throw new AccessDeniedException("The staff " + staff.getUsername() + " does not belong to the company "+ company.getName());
+            if (!found) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("O empregador '" + employer.getUsername() + "' não é proprietário da empresa '" + company.getName() + "'.");
             }
         }
-        return true;
+
+        if (isStaffPresent) {
+            StaffModel staff = staffRepository.findByUsername(sessionUser).orElse(null);
+            if (staff == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Funcionário com o nome de utilizador '" + sessionUser + "' não foi encontrado.");
+            }
+
+            if (!company.getId().equals(staff.getCompanyId())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("O funcionário '" + staff.getUsername() + "' não pertence à empresa '" + company.getName() + "'.");
+            }
+        }
+
+        // Se passou todas as validações com sucesso
+        return ResponseEntity.ok().build();
     }
 
-    public OrderModel findOrder(String companyId, String userId, String orderId, String sessionUser){
+    public ResponseEntity<?> findOrder(String companyId, String userId, String orderId, String sessionUser){
         boolean isUserPresent = userRepository.findByUsername(sessionUser).isPresent();
         boolean isEmployerPresent = employerRepository.findByUsername(sessionUser).isPresent();
         boolean isStaffPresent = staffRepository.findByUsername(sessionUser).isPresent();
-        validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
-        return orderRepository.findOrder(companyId, userId, orderId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
+        ResponseEntity<?> response = validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
+        return ResponseEntity.ok(orderRepository.findOrder(companyId, userId, orderId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist")));
     }
 
-    public OrderModel findOrderByTrackId(String companyId, String sessionUser, String trackId){
+    public ResponseEntity<?> findOrderByTrackId(String companyId, String sessionUser, String trackId){
         boolean isUserPresent = userRepository.findByUsername(sessionUser).isPresent();
         boolean isEmployerPresent = employerRepository.findByUsername(sessionUser).isPresent();
         boolean isStaffPresent = staffRepository.findByUsername(sessionUser).isPresent();
-        validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
-        return orderRepository.findByTrackId(trackId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
+        ResponseEntity<?> response = validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
+        OrderModel order = orderRepository.findByTrackId(trackId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
+        return ResponseEntity.ok(order);
     }
 
     public List<OrderModel> findAllCompanyAndUserOrders(String sessionUser, String userId, String companyId){
