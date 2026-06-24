@@ -23,7 +23,7 @@ public class GetCredentialsConfig {
 
     private void loadCredentials() {
         List<String> parameterNames = List.of(
-               "/vulcao/jwt/secret"
+                "/vulcao/jwt/secret"
         );
 
         Map<String, String> parameters = parameterStore.getParameters(parameterNames);

@@ -46,23 +46,15 @@ public class UserService {
 
 
     public void save(UserModel newUser){
-        if(newUser == null){
-            log.warn("save() called with a null UserModel");
-            throw new NullPointerException("THE USER CANNOT BE NULL");
-        }
         // NOTE: never log newUser.getPassword() — only non-sensitive identifiers
         log.debug("save() -> creating new user, username={}, email={}", newUser.getUsername(), newUser.getEmail());
         newUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
-        try{
-            newUser.onCreate();
 
-            userRepository.save(newUser);
-            log.info("save() -> user persisted successfully, username={}, id={}", newUser.getUsername(), newUser.getId());
-        }
-        catch (Exception e){
-            log.error("save() -> failed to persist user username={}: {}", newUser.getUsername(), e.getMessage(), e);
-            throw new RuntimeException("There was an issue saving the new user Model " + e);
-        }
+        newUser.onCreate();
+
+        userRepository.save(newUser);
+        log.info("save() -> user persisted successfully, username={}, id={}", newUser.getUsername(), newUser.getId());
+
     }
 
     public UserDTO findUserById(String userId){

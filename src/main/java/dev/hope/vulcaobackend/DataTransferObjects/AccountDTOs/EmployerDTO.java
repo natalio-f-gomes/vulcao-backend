@@ -19,8 +19,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamoDbBean
-public class EmployerDTO extends BaseAccountDTO{
+public class EmployerDTO extends BaseAccountDTO {
     private List<CompanyDTO> companiesRegistered;
-
-
 }

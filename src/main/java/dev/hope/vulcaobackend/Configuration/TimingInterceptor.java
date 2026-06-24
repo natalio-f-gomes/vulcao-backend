@@ -62,7 +62,9 @@ public class TimingInterceptor implements HandlerInterceptor {
         }
     }
 
-    /** Produces a readable "Controller#method" string from the handler, when available. */
+    /**
+     * Produces a readable "Controller#method" string from the handler, when available.
+     */
     private String describeHandler(Object handler) {
         if (handler instanceof HandlerMethod hm) {
             return hm.getBeanType().getSimpleName() + "#" + hm.getMethod().getName();
@@ -70,7 +72,9 @@ public class TimingInterceptor implements HandlerInterceptor {
         return handler != null ? handler.getClass().getSimpleName() : "-";
     }
 
-    /** Resolves the real client IP, honoring common proxy headers. */
+    /**
+     * Resolves the real client IP, honoring common proxy headers.
+     */
     private String resolveClientIp(HttpServletRequest req) {
         String forwarded = req.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {

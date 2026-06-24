@@ -54,7 +54,9 @@ public class TimingFilter extends OncePerRequestFilter {
         }
     }
 
-    /** Resolves the real client IP, honoring common proxy headers. */
+    /**
+     * Resolves the real client IP, honoring common proxy headers.
+     */
     private String resolveClientIp(HttpServletRequest req) {
         String forwarded = req.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {

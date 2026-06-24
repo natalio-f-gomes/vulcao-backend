@@ -16,7 +16,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-public class BaseAccountDTO  extends BaseModelDTO {
+public class BaseAccountDTO extends BaseModelDTO {
     private String firstName;
     private String lastName;
     private String username;

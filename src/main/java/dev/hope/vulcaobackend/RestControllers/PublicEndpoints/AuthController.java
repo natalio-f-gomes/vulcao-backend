@@ -136,7 +136,6 @@ public class AuthController {
         // Validate MFA
         ResponseEntity<?> mfaResponse = mfaService.confirmMFA(newUser.getEmail(), mfaCode);
         if(!mfaResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
-
             return mfaResponse;
         }
 
@@ -171,25 +170,22 @@ public class AuthController {
                     .body(Map.of("message", "Este nome de utilizador já está em uso. Por favor, escolhe outro nome de utilizador"));
         }
         // Save the user
-        try {
-            String userId = globalAccessControl.generateNewIdForUser();
-            newUser.setId(userId);
-            userService.save(newUser);
-            mfaService.deleteMFA(newUser.getEmail());
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (NullPointerException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Erro ao criar utilizador. Por favor, tente novamente."));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Erro inesperado. Por favor, tente novamente."));
-        }
+
+        String userId = globalAccessControl.generateNewIdForUser();
+        newUser.setId(userId);
+        userService.save(newUser);
+        mfaService.deleteMFA(newUser.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+
     }
 
 
     @PostMapping("/user/login/request/{username}")
     public ResponseEntity<?> userLoginRequest( @PathVariable String username) {
-        authService.validateUsername(username);
+        ResponseEntity<?> response =  authService.validateUsername(username);
+        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return response;
+        }
         boolean usernameExists = userRepository.findByUsername(username).isPresent();
         if(!usernameExists){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Não existe cliente com esse nome de usuario");
@@ -204,14 +200,15 @@ public class AuthController {
 
     @PostMapping("/user/login/confirm/{mfaCode}")
     public ResponseEntity<?> loginUserConfirm(@PathVariable String mfaCode, @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
-        authService.validateUsername(loginRequest.username());
+        ResponseEntity<?> userNameResponse =  authService.validateUsername(loginRequest.username());
+        if(!userNameResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+            return userNameResponse;
+        }
         UserModel user = userRepository.findByUsername(loginRequest.username()).orElseThrow(()-> new UsernameNotFoundException("USER WITH THIS USERNAME WAS NOT FOUND "+ loginRequest.username()));
-
         ResponseEntity<?> responseMFA =  mfaService.confirmMFA(user.getEmail(), mfaCode);
         if(!responseMFA.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return responseMFA;
         }
-
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password())
@@ -305,7 +302,6 @@ public class AuthController {
         if(usernameExists){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Este nome de utilizador já está em uso. Por favor, escolhe outro nome de utilizador");
         }
-        authService.validateEmail(email);
         String randomCode = mfaService.save(email);
         sesService.sendCode(email, randomCode);
         return ResponseEntity.accepted().build(); //202
@@ -367,7 +363,7 @@ public class AuthController {
     @PostMapping("/employer/password/reset/request/{email}")
     public ResponseEntity<?> EmployerResetPasswordRequest(@PathVariable String email) {
         System.out.println("Employer reset password confirm endpoint reached");
-        ResponseEntity<?> emailResponse = authService.validateEmail(email);
+        ResponseEntity<?> emailResponse = AuthService.validateEmail(email);
         if(!emailResponse.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
             return emailResponse;
         }

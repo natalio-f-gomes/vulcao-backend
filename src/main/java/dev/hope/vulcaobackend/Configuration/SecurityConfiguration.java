@@ -36,9 +36,12 @@ public class SecurityConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(SecurityConfiguration.class);
 
-    @Autowired private JwtCookieFilter jwtFilter;
-    @Autowired private CustomUserDetailService userDetailService;
-    @Autowired private CorsConfigurationSource corsConfigurationSource;
+    @Autowired
+    private JwtCookieFilter jwtFilter;
+    @Autowired
+    private CustomUserDetailService userDetailService;
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -73,10 +76,10 @@ public class SecurityConfiguration {
      * Logs every incoming request with method, path, status, cookies, and auth state.
      * Assigns a request ID so you can correlate logs from one request.
      * Output example:
-     *   [a3f2b1] >> PUT /api/v1/user/update/nataliogomes/address
-     *   [a3f2b1]    cookies: [JWT_TOKEN, XSRF-TOKEN]
-     *   [a3f2b1]    headers: Content-Type=application/json, X-XSRF-TOKEN=present
-     *   [a3f2b1] << 403 (took 12ms) auth=null
+     * [a3f2b1] >> PUT /api/v1/user/update/nataliogomes/address
+     * [a3f2b1]    cookies: [JWT_TOKEN, XSRF-TOKEN]
+     * [a3f2b1]    headers: Content-Type=application/json, X-XSRF-TOKEN=present
+     * [a3f2b1] << 403 (took 12ms) auth=null
      */
     @Bean
     public OncePerRequestFilter requestLoggingFilter() {

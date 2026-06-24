@@ -138,37 +138,6 @@ public class AuthService {
                     .body("O nome de utilizador só pode ter letras, números, ponto, traço e underscore (_)");
         }
 
-        int codepointCount = normalized.codePointCount(0, normalized.length());
-        if (codepointCount < 5 || codepointCount > 200) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("O nome de utilizador deve ter entre 5 e 200 caracteres");
-        }
-
-        for (int i = 0; i < normalized.length(); ) {
-            int cp = normalized.codePointAt(i);
-
-            if (cp == 0) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("O nome de utilizador não pode ter caracteres especiais");
-            }
-            if (Character.isWhitespace(cp) || Character.isSpaceChar(cp)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("O nome de utilizador não pode ter espaços");
-            }
-
-            int type = Character.getType(cp);
-            if (type == Character.FORMAT || type == Character.CONTROL ||
-                    type == Character.SURROGATE || type == Character.UNASSIGNED) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("O nome de utilizador tem caracteres inválidos");
-            }
-            if (cp < 128 && INVALID_CHARS.contains((char) cp)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("O nome de utilizador tem caracteres inválidos");
-            }
-
-            i += Character.charCount(cp);
-        }
 
         if (RESERVED_NAMES.contains(normalized.toLowerCase(java.util.Locale.ROOT))) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

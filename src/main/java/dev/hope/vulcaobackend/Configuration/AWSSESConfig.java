@@ -33,10 +33,14 @@ import java.util.Map;
 @Configuration
 public class AWSSESConfig {
 
-    @Autowired CompanyRepository companyRepository;
-    @Autowired ProductRepository productRepository;
-    @Autowired  WearableRepository wearableRepository;
-    @Autowired  UserRepository userRepository;
+    @Autowired
+    CompanyRepository companyRepository;
+    @Autowired
+    ProductRepository productRepository;
+    @Autowired
+    WearableRepository wearableRepository;
+    @Autowired
+    UserRepository userRepository;
     SesV2Client ses;
     private WearableService wearableService;
 
@@ -51,7 +55,7 @@ public class AWSSESConfig {
         var builder = SesV2Client.builder()
                 .credentialsProvider(credentialsProvider)
                 .region(Region.US_EAST_1);
-        if(!endpoint.isBlank()){
+        if (!endpoint.isBlank()) {
             builder.endpointOverride(URI.create(endpoint)); // tests only
         }
         this.ses = builder.build();
@@ -92,8 +96,6 @@ public class AWSSESConfig {
                         .build()).build())
                 .build());
     }
-
-
 
 
 }

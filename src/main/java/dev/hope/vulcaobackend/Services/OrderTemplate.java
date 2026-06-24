@@ -17,16 +17,16 @@ import java.util.List;
 public class OrderTemplate {
 
     // ── Brand palette (mirrors the site stylesheet) ───────────────────────────
-    private static final String INK     = "#0f0e0e";
-    private static final String CREAM   = "#f7f4ef";
-    private static final String ACCENT  = "#c8452a";
-    private static final String MID     = "#5a5650";
-    private static final String FAINT   = "#9a958f";
-    private static final String LINE    = "#e8e4de";
+    private static final String INK = "#0f0e0e";
+    private static final String CREAM = "#f7f4ef";
+    private static final String ACCENT = "#c8452a";
+    private static final String MID = "#5a5650";
+    private static final String FAINT = "#9a958f";
+    private static final String LINE = "#e8e4de";
     private static final String CARD_BG = "#ffffff";
 
     private static final String FONT_SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
-    private static final String FONT_SANS  = "'DM Sans', Arial, Helvetica, sans-serif";
+    private static final String FONT_SANS = "'DM Sans', Arial, Helvetica, sans-serif";
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
 
@@ -274,7 +274,7 @@ public class OrderTemplate {
         getHtmlDocumentStructure(html);
         getHtmlOrderHeaderSection(order, html);
 
-        if (!products.isEmpty())  getHtmlProductOrderSection(products, html);
+        if (!products.isEmpty()) getHtmlProductOrderSection(products, html);
         if (!wearables.isEmpty()) getHtmlWearableOrderSection(wearables, html);
 
         String note = order.getNote();
@@ -294,7 +294,7 @@ public class OrderTemplate {
         getHtmlOrderHeaderSection(order, html);
         System.out.println("products=" + products.size() + " wearables=" + wearables.size());
 
-        if (!products.isEmpty())  getHtmlProductOrderSection(products, html);
+        if (!products.isEmpty()) getHtmlProductOrderSection(products, html);
         if (!wearables.isEmpty()) getHtmlWearableOrderSection(wearables, html);
 
         String note = order.getNote();
@@ -327,7 +327,9 @@ public class OrderTemplate {
                 .append("</tr>");
     }
 
-    /** Minimal HTML escaping for user-supplied values (names, notes, addresses). */
+    /**
+     * Minimal HTML escaping for user-supplied values (names, notes, addresses).
+     */
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("&", "&amp;")
@@ -343,29 +345,48 @@ public class OrderTemplate {
 
     public String getStatusInPortuguese(OrderStatus status) {
         switch (status) {
-            case PENDING:    return "Pendente";
-            case PROCESSING: return "Em processamento";
-            case SENT:       return "Enviado";
-            case RECEIVED:   return "Recebido";
-            case COMPLETED:  return "Concluído";
-            case CANCELLED:  return "Cancelado";
-            default:         return "Enviado";
+            case PENDING:
+                return "Pendente";
+            case PROCESSING:
+                return "Em processamento";
+            case SENT:
+                return "Enviado";
+            case RECEIVED:
+                return "Recebido";
+            case COMPLETED:
+                return "Concluído";
+            case CANCELLED:
+                return "Cancelado";
+            default:
+                return "Enviado";
         }
     }
 
-    /** Badge colour per status (matches the dashboard status palette). */
+    /**
+     * Badge colour per status (matches the dashboard status palette).
+     */
     public String getStatusColor(OrderStatus status) {
         switch (status) {
-            case PENDING:    return "#bc6c25"; // warn
-            case PROCESSING: return "#0c447c"; // info
-            case SENT:       return ACCENT;    // accent
-            case RECEIVED:   return "#2d6a4f"; // success
-            case COMPLETED:  return "#2d6a4f"; // success
-            case CANCELLED:  return "#791f1f"; // danger
-            default:         return MID;
+            case PENDING:
+                return "#bc6c25"; // warn
+            case PROCESSING:
+                return "#0c447c"; // info
+            case SENT:
+                return ACCENT;    // accent
+            case RECEIVED:
+                return "#2d6a4f"; // success
+            case COMPLETED:
+                return "#2d6a4f"; // success
+            case CANCELLED:
+                return "#791f1f"; // danger
+            default:
+                return MID;
         }
     }
 
-    public static record ProductOrder(ProductModel product, Integer quantity) { }
-    public static record WearableOrder(WearableModel item, Integer quantity) { }
+    public static record ProductOrder(ProductModel product, Integer quantity) {
+    }
+
+    public static record WearableOrder(WearableModel item, Integer quantity) {
+    }
 }

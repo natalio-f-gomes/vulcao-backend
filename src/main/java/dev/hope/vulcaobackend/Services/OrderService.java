@@ -35,17 +35,22 @@ import java.util.*;
 @Service
 public class OrderService {
 
-    @Autowired private  UserRepository userRepository;
-    @Autowired private  CompanyRepository companyRepository;
-    @Autowired private  ProductRepository productRepository;
-    @Autowired  OrderRepository orderRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private CompanyRepository companyRepository;
+    @Autowired
+    private ProductRepository productRepository;
+    @Autowired
+    OrderRepository orderRepository;
     private static final SecureRandom secureRandom = new SecureRandom();
     @Autowired
     private EmployerRepository employerRepository;
     @Autowired
     private StaffRepository staffRepository;
 
-    @Autowired OrderItemRepository orderItemRepository;
+    @Autowired
+    OrderItemRepository orderItemRepository;
     @Autowired
     private WearableRepository wearableRepository;
 
@@ -55,7 +60,7 @@ public class OrderService {
     @Autowired
     private CompanyMapper companyMapper;
 
-    public OrderService(AWSSESConfig service, OrderTemplate orderTemplate){
+    public OrderService(AWSSESConfig service, OrderTemplate orderTemplate) {
         this.sesService = service;
         this.orderTemplate = orderTemplate;
     }
@@ -101,25 +106,25 @@ public class OrderService {
         return ResponseEntity.accepted().build();
     }
 
-    public Double calculateProductCost(String productId, Integer quantity){
-        ProductModel product = productRepository.findById(productId).orElseThrow(()-> new RuntimeException("Product with id "+ productId + " not found"));
+    public Double calculateProductCost(String productId, Integer quantity) {
+        ProductModel product = productRepository.findById(productId).orElseThrow(() -> new RuntimeException("Product with id " + productId + " not found"));
         return product.getPricePerUnit() * quantity;
 
     }
 
-    public Double calculateWearableCost(String wearableId, Integer quantity){
-        WearableModel wearable = wearableRepository.findById(wearableId).orElseThrow(()-> new RuntimeException("Wearable with id "+ wearableId + " not found"));
+    public Double calculateWearableCost(String wearableId, Integer quantity) {
+        WearableModel wearable = wearableRepository.findById(wearableId).orElseThrow(() -> new RuntimeException("Wearable with id " + wearableId + " not found"));
         return wearable.getPrice() * quantity;
 
     }
 
-    public Double calculateOrderCost(List<CartItemModel> items){
+    public Double calculateOrderCost(List<CartItemModel> items) {
         Double totalCost = 0.0;
-        for(CartItemModel item: items){
-            if(item.getItemType().equals(OfferingType.PRODUCT)){
+        for (CartItemModel item : items) {
+            if (item.getItemType().equals(OfferingType.PRODUCT)) {
                 totalCost += calculateProductCost(item.getId(), item.getQuantity());
             }
-            if(item.getItemType().equals(OfferingType.WEARABLE)){
+            if (item.getItemType().equals(OfferingType.WEARABLE)) {
                 totalCost += calculateWearableCost(item.getId(), item.getQuantity());
             }
 
@@ -133,9 +138,11 @@ public class OrderService {
         int max = 100_000;
         String randomTrackId = "USER-" + userId.substring(0, 4) + "ORD" + secureRandom.nextInt(min, max);
         boolean found = true;
-        while(found){
-            boolean trackIdExists =  orderRepository.findByTrackId(randomTrackId).isPresent();
-            if(!trackIdExists){found=false;}
+        while (found) {
+            boolean trackIdExists = orderRepository.findByTrackId(randomTrackId).isPresent();
+            if (!trackIdExists) {
+                found = false;
+            }
         }
         return randomTrackId;
     }
@@ -143,14 +150,16 @@ public class OrderService {
     public String generateOrderId() {
         String randomId = UUID.randomUUID().toString();
         boolean found = true;
-        while(found){
-            boolean orderExists =  orderRepository.findById(randomId).isPresent();
-            if(!orderExists){found=false;}
+        while (found) {
+            boolean orderExists = orderRepository.findById(randomId).isPresent();
+            if (!orderExists) {
+                found = false;
+            }
         }
         return randomId;
     }
 
-    public void saveOrderItem(CartItemModel cartItem, OrderModel order){
+    public void saveOrderItem(CartItemModel cartItem, OrderModel order) {
         String itemName = "";
         Double price = 0.0;
 
@@ -191,7 +200,7 @@ public class OrderService {
         orderRepository.update(order);
     }
 
-    public void sendNotification(String userEmail, String companyEmail, OrderModel order, String userNotification, String companyNotification){
+    public void sendNotification(String userEmail, String companyEmail, OrderModel order, String userNotification, String companyNotification) {
         System.out.println("=== ORDER ITEMS FROM DATABASE ===");
         for (OrderItemModel item : order.getOrderItems()) {
             System.out.println("Item ID: " + item.getId());
@@ -203,21 +212,21 @@ public class OrderService {
         //send email to user
         List<OrderTemplate.ProductOrder> productOrderList = getProductOrderDetails(order.getOrderItems());
         List<OrderTemplate.WearableOrder> wearableOrderList = getWearableOrderDetails(order.getOrderItems());
-        sesService.sendOrderNotification(userEmail, orderTemplate.buildHtmlOrderEmailForUser(order,productOrderList, wearableOrderList), userNotification);
+        sesService.sendOrderNotification(userEmail, orderTemplate.buildHtmlOrderEmailForUser(order, productOrderList, wearableOrderList), userNotification);
 
         //send email to company
-        sesService.sendOrderNotification(companyEmail, orderTemplate.buildHtmlOrderEmailForCompany(order,productOrderList, wearableOrderList), companyNotification);
+        sesService.sendOrderNotification(companyEmail, orderTemplate.buildHtmlOrderEmailForCompany(order, productOrderList, wearableOrderList), companyNotification);
     }
 
 
-    public ResponseEntity<?> placeOrder(String sessionUser,  OrderModel newOrder){
-        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("Username: "+ sessionUser + " not found"));
-        if(!newOrder.getUserId().equals(user.getId())){
+    public ResponseEntity<?> placeOrder(String sessionUser, OrderModel newOrder) {
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("Username: " + sessionUser + " not found"));
+        if (!newOrder.getUserId().equals(user.getId())) {
             throw new AccessDeniedException("You do not have the permissions to handle this operation");
         }
-        CompanyModel company = companyRepository.findById(newOrder.getCompanyId()).orElseThrow(()-> new RuntimeException("Company With ID: "+ newOrder.getCompanyId() + " not found"));
+        CompanyModel company = companyRepository.findById(newOrder.getCompanyId()).orElseThrow(() -> new RuntimeException("Company With ID: " + newOrder.getCompanyId() + " not found"));
         ResponseEntity<?> response = validateOrderItems(newOrder.getCartItems(), company, user.getId());
-        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+        if (!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
             return response;
         }
         newOrder.setStatus(OrderStatus.SENT);
@@ -227,18 +236,18 @@ public class OrderService {
         newOrder.setTrackId(generateTrackId(user.getId()));
         newOrder.onCreate();
         orderRepository.save(newOrder);
-        for(CartItemModel cartItem: newOrder.getCartItems()){
+        for (CartItemModel cartItem : newOrder.getCartItems()) {
             saveOrderItem(cartItem, newOrder);
         }
         String userFullName = user.getFirstName() + " " + user.getLastName();
         String userNotification = "Notificação de encomenda da empresa " + company.getName();
-        String companyNotification = "Notificação de encomenda de: "+ userFullName;
+        String companyNotification = "Notificação de encomenda de: " + userFullName;
         sendNotification(user.getEmail(), company.getEmail(), newOrder, userNotification, companyNotification);
         return ResponseEntity.accepted().build();
 
     }
 
-    public Optional<OrderItemModel> findOrderItemById(String itemId){
+    public Optional<OrderItemModel> findOrderItemById(String itemId) {
         //TODO ADD GUARD RAILS OF WHO IS ALLOWED TO GET THE ITEM
         return orderItemRepository.findById(itemId);
     }
@@ -295,48 +304,50 @@ public class OrderService {
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity<?> findOrder(String companyId, String userId, String orderId, String sessionUser){
+    public ResponseEntity<?> findOrder(String companyId, String userId, String orderId, String sessionUser) {
         boolean isUserPresent = userRepository.findByUsername(sessionUser).isPresent();
         boolean isEmployerPresent = employerRepository.findByUsername(sessionUser).isPresent();
         boolean isStaffPresent = staffRepository.findByUsername(sessionUser).isPresent();
         ResponseEntity<?> response = validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
-        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+        if (!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
             return response;
         }
-        return ResponseEntity.ok(orderRepository.findOrder(companyId, userId, orderId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist")));
+        return ResponseEntity.ok(orderRepository.findOrder(companyId, userId, orderId).orElseThrow(() -> new RuntimeException("Order with this company id and user Id does not exist")));
     }
 
-    public ResponseEntity<?> findOrderByTrackId(String companyId, String sessionUser, String trackId){
+    public ResponseEntity<?> findOrderByTrackId(String companyId, String sessionUser, String trackId) {
         boolean isUserPresent = userRepository.findByUsername(sessionUser).isPresent();
         boolean isEmployerPresent = employerRepository.findByUsername(sessionUser).isPresent();
         boolean isStaffPresent = staffRepository.findByUsername(sessionUser).isPresent();
         ResponseEntity<?> response = validateFindOrder(isStaffPresent, isEmployerPresent, isUserPresent, sessionUser, companyId);
-        if(!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)){
+        if (!response.getStatusCode().isSameCodeAs(HttpStatus.ACCEPTED)) {
             return response;
         }
-        OrderModel order = orderRepository.findByTrackId(trackId).orElseThrow(()-> new RuntimeException("Order with this company id and user Id does not exist"));
+        OrderModel order = orderRepository.findByTrackId(trackId).orElseThrow(() -> new RuntimeException("Order with this company id and user Id does not exist"));
         return ResponseEntity.ok(order);
     }
 
-    public List<OrderModel> findAllCompanyAndUserOrders(String sessionUser, String userId, String companyId){
-        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
-        if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
+    public List<OrderModel> findAllCompanyAndUserOrders(String sessionUser, String userId, String companyId) {
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(() -> new RuntimeException("THIS USER DOES NOT EXISTS"));
+        if (!user.getId().equals(userId)) {
+            throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");
+        }
         return orderRepository.findAllCompanyAndUserOrders(userId, companyId);
     }
 
-    public List<OrderModel> staffFindCompanyOrders(String sessionUser, String companyId){
-        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("THERE IS NO STAFF WITH THIS USERNAME: "+ sessionUser));
-        if(!staff.getCompanyId().equals(companyId)){
-            throw new AccessDeniedException("THIS STAFF "+ staff.getUsername() + " does not have access to view this company data");
+    public List<OrderModel> staffFindCompanyOrders(String sessionUser, String companyId) {
+        StaffModel staff = staffRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("THERE IS NO STAFF WITH THIS USERNAME: " + sessionUser));
+        if (!staff.getCompanyId().equals(companyId)) {
+            throw new AccessDeniedException("THIS STAFF " + staff.getUsername() + " does not have access to view this company data");
         }
         return orderRepository.findAllCompanyOrders(companyId);
     }
 
-    public List<OrderModel> employerFindCompanyOrders(String sessionUser, String companyId){
-        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(()-> new UsernameNotFoundException("THERE IS NO EMPLOYER WITH THIS USERNAME: "+ sessionUser));
+    public List<OrderModel> employerFindCompanyOrders(String sessionUser, String companyId) {
+        EmployerModel employer = employerRepository.findByUsername(sessionUser).orElseThrow(() -> new UsernameNotFoundException("THERE IS NO EMPLOYER WITH THIS USERNAME: " + sessionUser));
         List<CompanyDTO> companies = employer.getCompaniesRegistered();
-        for(CompanyDTO company: companies){
-            if(company.getId().equals(companyId)){
+        for (CompanyDTO company : companies) {
+            if (company.getId().equals(companyId)) {
                 return orderRepository.findAllCompanyOrders(companyId);
             }
         }
@@ -345,13 +356,13 @@ public class OrderService {
     }
 
 
-    public List<OrderModel> findAllCompanyOrders(String sessionUser, String companyId){
+    public List<OrderModel> findAllCompanyOrders(String sessionUser, String companyId) {
         boolean doesStaffExists = staffRepository.findByUsername(sessionUser).isPresent();
         boolean doesEmployerExists = employerRepository.findByUsername(sessionUser).isPresent();
-        if(!doesEmployerExists && !doesStaffExists){
+        if (!doesEmployerExists && !doesStaffExists) {
             throw new AccessDeniedException("YOU DO NOT HAVE THE PERMISSIONS TO ACCESS THIS DATA.");
         }
-        if(doesStaffExists){
+        if (doesStaffExists) {
             return staffFindCompanyOrders(sessionUser, companyId);
         }
         return employerFindCompanyOrders(sessionUser, companyId);
@@ -359,38 +370,39 @@ public class OrderService {
     }
 
 
-    public List<OrderModel> findAllUserOrders(String sessionUser, String userId){
-        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(()-> new RuntimeException("THIS USER DOES NOT EXISTS"));
-        if(!user.getId().equals(userId)){throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");}
+    public List<OrderModel> findAllUserOrders(String sessionUser, String userId) {
+        UserModel user = userRepository.findByUsername(sessionUser).orElseThrow(() -> new RuntimeException("THIS USER DOES NOT EXISTS"));
+        if (!user.getId().equals(userId)) {
+            throw new AccessDeniedException("ACCESS DENIED, THE USER LOGGED IN DOES NOT MATCH THE ID IN THE DATABASE");
+        }
         return orderRepository.findAllUserOrders(userId);
     }
 
-    public OrderModel employerUpdateOrder(String username, OrderModel order, OrderStatus status){
-        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Employer with this name does not exist: " + username));
+    public OrderModel employerUpdateOrder(String username, OrderModel order, OrderStatus status) {
+        EmployerModel employer = employerRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Employer with this name does not exist: " + username));
         List<CompanyDTO> companies = employer.getCompaniesRegistered();
-        for(CompanyDTO company: companies){
-            if(company.getId().equals(order.getCompanyId())){
+        for (CompanyDTO company : companies) {
+            if (company.getId().equals(order.getCompanyId())) {
                 order.setStatus(status);
                 orderRepository.update(order);
 
                 String userFullName = employer.getFirstName() + " " + employer.getLastName();
                 String userNotification = "A empresa " + company.getName() + " alterou o status do seu pedido.";
                 String companyNotification = "O status do pedido de " + userFullName + " foi alterado.";
-                sendNotification(employer.getEmail(), company.getEmail(), order,userNotification, companyNotification );
+                sendNotification(employer.getEmail(), company.getEmail(), order, userNotification, companyNotification);
                 return order;
             }
         }
 
 
-
         throw new AccessDeniedException("THIS EMPLOYER DOES NOT OWN  THE COMPANY: " + order.getCompanyId());
     }
 
-    public OrderModel staffUpdateOrder(String username, OrderModel order, OrderStatus status){
-        StaffModel staff = staffRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Employer with this name does not exist: " + username));
-        if(staff.getCompanyId().equals(order.getCompanyId())){
-        order.setStatus(status);
-        orderRepository.update(order);
+    public OrderModel staffUpdateOrder(String username, OrderModel order, OrderStatus status) {
+        StaffModel staff = staffRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Employer with this name does not exist: " + username));
+        if (staff.getCompanyId().equals(order.getCompanyId())) {
+            order.setStatus(status);
+            orderRepository.update(order);
             return order;
         }
         throw new AccessDeniedException("THIS STAFF DOES NOT WORK FOR THE COMPAMY: " + order.getCompanyId());
@@ -398,25 +410,26 @@ public class OrderService {
     }
 
     public OrderModel updateStatus(String orderId, OrderStatus status, String sessionUser) {
-        OrderModel order = orderRepository.findById(orderId).orElseThrow(()-> new RuntimeException("ORDER NOT FOUND"));
-        UserModel user = userRepository.findById(order.getUserId()).orElseThrow(()-> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
-        CompanyModel company = companyRepository.findById(order.getCompanyId()).orElseThrow(()-> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
+        OrderModel order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("ORDER NOT FOUND"));
+        UserModel user = userRepository.findById(order.getUserId()).orElseThrow(() -> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
+        CompanyModel company = companyRepository.findById(order.getCompanyId()).orElseThrow(() -> new RuntimeException("THE ORDER UserID does not match any user in the database: "));
 
         boolean employerLoggedIn = employerRepository.findByUsername(sessionUser).isPresent();
 
         boolean staffLoggedIn = staffRepository.findByUsername(sessionUser).isPresent();
 
-        if(!staffLoggedIn && !employerLoggedIn){
+        if (!staffLoggedIn && !employerLoggedIn) {
             throw new AccessDeniedException("NEITHER Staff or employer are logged in");
-        } if(staffLoggedIn){
-            return staffUpdateOrder(sessionUser, order, status );
+        }
+        if (staffLoggedIn) {
+            return staffUpdateOrder(sessionUser, order, status);
 
         }
 
-        return employerUpdateOrder(sessionUser, order, status );
+        return employerUpdateOrder(sessionUser, order, status);
     }
 
-    public List<OrderTemplate.ProductOrder> getProductOrderDetails(List<OrderItemModel> orderItems){
+    public List<OrderTemplate.ProductOrder> getProductOrderDetails(List<OrderItemModel> orderItems) {
         System.out.println("Products from order");
         List<OrderTemplate.ProductOrder> products = new ArrayList<>();
         for (OrderItemModel item : orderItems) {
@@ -424,25 +437,25 @@ public class OrderService {
             if (item.getItemType().equals(OfferingType.PRODUCT)) {
                 ProductModel product = productRepository.findById(item.getId())
                         .orElseThrow(() -> new RuntimeException("Product in this order not found with id: " + item.getId()));
-                System.out.println("Product name "+product.getName());
+                System.out.println("Product name " + product.getName());
                 products.add(new OrderTemplate.ProductOrder(product, item.getQuantity()));
             }
         }
         return products;
     }
 
-    public List<OrderTemplate.WearableOrder>getWearableOrderDetails(List<OrderItemModel> orderItems){
+    public List<OrderTemplate.WearableOrder> getWearableOrderDetails(List<OrderItemModel> orderItems) {
         System.out.println("Products from order");
         List<OrderTemplate.WearableOrder> wearables = new ArrayList<>();
         for (OrderItemModel item : orderItems) {
             System.out.println("Wearable Offering type: " + item.getItemType());
-             if (item.getItemType().equals(OfferingType.WEARABLE)) {
+            if (item.getItemType().equals(OfferingType.WEARABLE)) {
                 WearableModel wearable = wearableRepository.findById(item.getId())
                         .orElseThrow(() -> new RuntimeException("Wearable in this order not found with id: " + item.getId()));
                 wearables.add(new OrderTemplate.WearableOrder(wearable, item.getQuantity()));
             }
         }
-       return wearables;
+        return wearables;
     }
 
 }

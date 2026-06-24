@@ -25,7 +25,8 @@ public class JwtCookieFilter extends OncePerRequestFilter {
 
     @Autowired
     private JWTService jwtUtil;
-    @Autowired private UserDetailsService userDetailsService;
+    @Autowired
+    private UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest req,
@@ -48,7 +49,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
-        }catch (UsernameNotFoundException | JwtException | IllegalArgumentException e){
+        } catch (UsernameNotFoundException | JwtException | IllegalArgumentException e) {
             System.out.println(e);
             SecurityContextHolder.clearContext();
         }

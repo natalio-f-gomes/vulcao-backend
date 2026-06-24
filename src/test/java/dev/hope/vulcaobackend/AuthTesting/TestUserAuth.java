@@ -61,7 +61,7 @@ public class TestUserAuth extends CleanTable {
     void testUserAuthWithValidData() throws JSONException, IOException, InterruptedException {
         System.out.println("=== Starting test ===");
         List<JSONObject> userTestingData = authTestData.validEmployers();
-        for(JSONObject user: userTestingData){
+        for (JSONObject user : userTestingData) {
             String email = user.get("email").toString();
             String username = user.get("username").toString();
             String password = user.get("password").toString();
@@ -69,10 +69,9 @@ public class TestUserAuth extends CleanTable {
             JSONObject employerLoginData = new JSONObject();
             employerLoginData.put("username", username);
             employerLoginData.put("password", password);
-            String token = loginUser(email, username, employerLoginData,202, 200);
+            String token = loginUser(email, username, employerLoginData, 202, 200);
         }
     }
-
 
 
     public void registerUser(String employerEmail, String username, JSONObject employer, int expectedRequestStatus, int expectedConfirmStatus) throws InterruptedException, IOException {

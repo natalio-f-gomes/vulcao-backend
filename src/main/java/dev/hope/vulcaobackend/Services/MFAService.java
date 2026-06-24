@@ -16,17 +16,18 @@ import java.time.LocalDateTime;
 @Service
 public class MFAService {
 
-    @Autowired private MfaRepository mfaRepository;
+    @Autowired
+    private MfaRepository mfaRepository;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public String generateRandomCode(){
+    public String generateRandomCode() {
         int code = secureRandom.nextInt(100_000) + 900_000;
-        System.out.println("Random Code: "+ code);
+        System.out.println("Random Code: " + code);
         return String.valueOf(code);
     }
 
-    public String save(String email){
+    public String save(String email) {
         String randomCode = generateRandomCode();
         MFAModel mfaData = new MFAModel();
         mfaData.setAuthCode(randomCode);
@@ -38,17 +39,17 @@ public class MFAService {
     }
 
 
-    public ResponseEntity<?> confirmMFA(String email, String code){
+    public ResponseEntity<?> confirmMFA(String email, String code) {
         MFAModel mfa = mfaRepository.findByUserEmail(email)
                 .orElseThrow(() -> new RuntimeException("Nenhum pedido de código MFA foi registado para o e-mail: " + email));
-        if(!mfa.getAuthCode().equals(code)){
+        if (!mfa.getAuthCode().equals(code)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("O código de verificação introduzido é inválido.");
         }
 
         LocalDateTime sentTime = mfa.getSendTime();
         LocalDateTime receivedTime = LocalDateTime.now();
         Duration duration = Duration.between(sentTime, receivedTime);
-        if(duration.toMinutes() > 15){
+        if (duration.toMinutes() > 15) {
             mfaRepository.deleteMFAData(mfa);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Este código expirou. Por favor, solicite um novo código.");
         }
@@ -59,7 +60,7 @@ public class MFAService {
     // Add a method to delete after successful registration
     public void deleteMFA(String email) {
         System.out.println("MFA DELETE POINT REACHED");
-        MFAModel mfaData = mfaRepository.findByUserEmail(email).orElseThrow(()-> new RuntimeException("Nenhum registo de autenticação encontrado para: " + email));
+        MFAModel mfaData = mfaRepository.findByUserEmail(email).orElseThrow(() -> new RuntimeException("Nenhum registo de autenticação encontrado para: " + email));
         mfaRepository.deleteMFAData(mfaData);
         System.out.println("MFA SUCCESSFULLY DELETED");
     }

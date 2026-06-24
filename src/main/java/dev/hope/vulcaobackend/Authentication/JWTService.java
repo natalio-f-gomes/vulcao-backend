@@ -21,12 +21,11 @@ import static io.jsonwebtoken.Jwts.builder;
 public class JWTService {
 
 
-
     private final String secret;
     private final SecretKey signingKey;
 
     @Autowired
-    public JWTService(ParameterStoreService parameterStoreService){
+    public JWTService(ParameterStoreService parameterStoreService) {
         this.secret = parameterStoreService.getParameter("/vulcao/jwt/secret");
         this.signingKey = Keys.hmacShaKeyFor(this.secret.getBytes(StandardCharsets.UTF_8));
     }
@@ -38,7 +37,7 @@ public class JWTService {
         return this.signingKey;
     }
 
-    public String generateJWTToken(String username,String role){
+    public String generateJWTToken(String username, String role) {
         return builder().subject(username)
                 .claim("role", role)
                 .issuedAt(new Date())
@@ -47,7 +46,7 @@ public class JWTService {
                 .compact();
     }
 
-    public String extractUsername(String token){
+    public String extractUsername(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -56,14 +55,14 @@ public class JWTService {
                 .getSubject();
     }
 
-    public boolean isTokenValid(String token){
-        try{
+    public boolean isTokenValid(String token) {
+        try {
             Jwts.parser()
                     .verifyWith(Keys.hmacShaKeyFor(secret.getBytes()))
                     .build()
                     .parseSignedClaims(token);
             return true;
-        }catch (JwtException | IllegalArgumentException e){
+        } catch (JwtException | IllegalArgumentException e) {
             System.out.println("There was an exception in isTokenValid. Details: " + e);
             return false;
         }
@@ -81,6 +80,7 @@ public class JWTService {
         Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
+
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }

@@ -1,5 +1,5 @@
 package dev.hope.vulcaobackend.Models.Properties;
 
 public enum FeatureRequestStatus {
-    PLANNED, IN_PROGRESS, SHIPPED, UNDER_REVIEW, CANCELED
+    PLANEJADO, EM_ANDAMENTO, ENVIADO, EM_REVISÃO, CANCELADO
 }

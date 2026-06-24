@@ -10,7 +10,7 @@ import java.time.Duration;
 public class CookieUtil {
 
     //This is for all accounts
-    public ResponseCookie createCookie(String token){
+    public ResponseCookie createCookie(String token) {
         return ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)
                 .secure(true)
@@ -20,7 +20,7 @@ public class CookieUtil {
                 .build();
     }
 
-    public ResponseCookie clearCookie(){
+    public ResponseCookie clearCookie() {
         return ResponseCookie.from("AUTH_TOKEN", "")
                 .httpOnly(true)
                 .secure(true)
