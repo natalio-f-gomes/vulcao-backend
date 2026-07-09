@@ -2,11 +2,9 @@ package dev.hope.vulcaobackend.Services;
 
 import dev.hope.vulcaobackend.Models.MFAModel;
 import dev.hope.vulcaobackend.Repositories.MfaRepository;
+import dev.hope.vulcaobackend.Services.ExceptionHandler.ApiException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -39,11 +37,11 @@ public class MFAService {
     }
 
 
-    public ResponseEntity<?> confirmMFA(String email, String code) {
+    public void confirmMFA(String email, String code) {
         MFAModel mfa = mfaRepository.findByUserEmail(email)
                 .orElseThrow(() -> new RuntimeException("Nenhum pedido de código MFA foi registado para o e-mail: " + email));
         if (!mfa.getAuthCode().equals(code)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("O código de verificação introduzido é inválido.");
+            throw new ApiException(HttpStatus.FORBIDDEN, "O código de verificação introduzido é inválido.");
         }
 
         LocalDateTime sentTime = mfa.getSendTime();
@@ -51,16 +49,15 @@ public class MFAService {
         Duration duration = Duration.between(sentTime, receivedTime);
         if (duration.toMinutes() > 15) {
             mfaRepository.deleteMFAData(mfa);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Este código expirou. Por favor, solicite um novo código.");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Este código expirou. Por favor, solicite um novo código.");
         }
 
-        return ResponseEntity.accepted().build();
     }
 
     // Add a method to delete after successful registration
     public void deleteMFA(String email) {
         System.out.println("MFA DELETE POINT REACHED");
-        MFAModel mfaData = mfaRepository.findByUserEmail(email).orElseThrow(() -> new RuntimeException("Nenhum registo de autenticação encontrado para: " + email));
+        MFAModel mfaData = mfaRepository.findByUserEmail(email).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,"Nenhum registo de autenticação encontrado para: " + email));
         mfaRepository.deleteMFAData(mfaData);
         System.out.println("MFA SUCCESSFULLY DELETED");
     }

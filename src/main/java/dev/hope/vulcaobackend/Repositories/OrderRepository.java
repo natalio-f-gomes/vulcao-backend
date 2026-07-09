@@ -1,14 +1,12 @@
 package dev.hope.vulcaobackend.Repositories;
 
-import dev.hope.vulcaobackend.Models.AccountEntities.StaffModel;
-import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
-import dev.hope.vulcaobackend.Models.Shopping.CartItemModel;
+
+
 import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
-import dev.hope.vulcaobackend.Repositories.Cart.CartItemRepository;
+
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
@@ -22,158 +20,149 @@ import java.util.Optional;
 @Repository
 public class OrderRepository {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderRepository.class);
-    private final DynamoDbTable<OrderModel> orderTable;
+    Logger logger = LoggerFactory.getLogger(OrderRepository.class);
 
-    public OrderRepository(DynamoDbEnhancedClient client) {
-        this.orderTable = client.table("Orders", TableSchema.fromBean(OrderModel.class));
+    private final DynamoDbTable<OrderModel> table;
+
+    public OrderRepository(DynamoDbEnhancedClient client){
+        this.table = client.table("Orders", TableSchema.fromBean(OrderModel.class));
+
     }
 
     @PostConstruct
     public void init() {
         try {
-            orderTable.createTable(CreateTableEnhancedRequest.builder()
+            table.createTable(CreateTableEnhancedRequest.builder()
                     .globalSecondaryIndices(
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("id-index")
+                                    .indexName("order-id")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("track-id-index")
+                                    .indexName("track-id")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("user-id-index")
+                                    .indexName("business-id")
+                                    .projection(p -> p.projectionType(ProjectionType.ALL))
+                                    .build(),
+                            EnhancedGlobalSecondaryIndex.builder()
+                                    .indexName("total-cost")
+                                    .projection(p -> p.projectionType(ProjectionType.ALL))
+                                    .build(),
+                            EnhancedGlobalSecondaryIndex.builder()
+                                    .indexName("status")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build()
                     )
                     .build());
         } catch (ResourceInUseException e) {
-            logger.debug("TABLE Orders ALREADY EXISTS");
+            // table already exists
+            logger.debug("TABLE ORDERS ALREADY EXISTS");
         }
     }
-
-    /**
-     * Saves a NEW order. The condition now guards the table's actual key
-     * (partition key), not the "id" attribute — attribute_not_exists on a
-     * non-key attribute silently passes when the stored item never had
-     * that attribute set, which is exactly why the old overwrite slipped
-     * through without a ConditionalCheckFailedException.
-     */
-    public void save(OrderModel newOrder) {
+    public void save(OrderModel order) {
+        order.onCreate();
+        logger.debug("NEW ORDER REGISTERING: " + order.getId());
         try {
-            orderTable.putItem(r -> r.item(newOrder)
+            table.putItem(r -> r.item(order)
                     .conditionExpression(Expression.builder()
-                            .expression("attribute_not_exists(#pk) AND attribute_not_exists(#sk)")
-                            .putExpressionName("#pk", "companyId")
-                            .putExpressionName("#sk", "orderKey")
+                            .expression("attribute_not_exists(#pid)")
+                            .putExpressionName("#pid", "id")
                             .build()));
-            System.out.println("PK=" + newOrder.getCompanyId());
-            System.out.println("SK=" + newOrder.getOrderKey());
         } catch (ConditionalCheckFailedException e) {
-            System.out.println("PK=" + newOrder.getCompanyId());
-            System.out.println("SK=" + newOrder.getOrderKey());
-            throw e;
+            throw new RuntimeException("This Order already exists " + order.getId(), e);
         }
     }
 
-    public List<OrderModel> findAll() {
-        return orderTable.scan().items().stream().toList();
-    }
-
-    public void update(OrderModel updatedOrder) {
+    public void update(OrderModel order) {
+        order.onUpdate();
         try {
-            orderTable.putItem(PutItemEnhancedRequest.builder(OrderModel.class)
-                    .item(updatedOrder)
+            table.putItem(PutItemEnhancedRequest.builder(OrderModel.class)
+                    .item(order)
                     .conditionExpression(Expression.builder()
-                            .expression("attribute_exists(#pk)")
-                            .putExpressionName("#pk", "companyId")
-                            .build())
+                            .expression("attribute_exists(id)").build())
                     .build());
         } catch (ConditionalCheckFailedException e) {
-            throw new RuntimeException("This Order does not exist: " + updatedOrder.getId(), e);
+            throw new RuntimeException("This Order does not exists: "+ order.getId(), e);
         }
-    }
-
-    public Optional<OrderModel> findByTrackId(String trackId) {
-        return orderTable.index("track-id-index")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(trackId)))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .findFirst();
     }
 
     public Optional<OrderModel> findById(String orderId) {
-        return orderTable.index("id-index")
+        return table
                 .query(QueryConditional.keyEqualTo(k -> k.partitionValue(orderId)))
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .findFirst();
     }
 
-    /**
-     * One specific order — now requires the orderId, because
-     * (companyId, userId) alone no longer identifies a single item.
-     */
-    public Optional<OrderModel> findOrder(String companyId, String userId, String orderId) {
-        OrderModel item = orderTable.getItem(Key.builder()
-                .partitionValue(companyId)
-                .sortValue("#" + userId + "#" + orderId)
-                .build());
-        return Optional.ofNullable(item);
-    }
-
-    /**
-     * ALL of a user's orders at a company. begins_with on the sort key
-     * is what makes multiple orders per (company, user) possible —
-     * the old keyEqualTo on the full key could only ever return one item.
-     */
-    public List<OrderModel> findAllCompanyAndUserOrders(String userId, String companyId) {
-        QueryConditional conditional =
-                QueryConditional.sortBeginsWith(
-                        Key.builder()
-                                .partitionValue(companyId)
-                                .sortValue(companyId + "#" + userId + "$")
-                                .build()
-                );
-
-        return orderTable.query(r -> r.queryConditional(conditional))
-                .items()
-                .stream()
-                .toList();
-    }
-
-    public List<OrderModel> findAllUserOrders(String userId) {
-        return orderTable.index("user-id-index")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(userId)))
+    public List<OrderModel> findByOrderId(String clientId) {
+        return table.index("order-id")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(clientId)))
                 .stream().flatMap(page -> page.items().stream())
                 .toList();
     }
 
-    public void delete(OrderModel order) {
-        orderTable.deleteItem(order);
+
+
+    public Optional<OrderModel> findByTrackId(String trackId) {
+        var result = table.index("track-id")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(trackId)))
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .findFirst();
+        System.out.println("findByTrackId({"+trackId+"}) -> {"+result+"}" );
+        return result;
     }
 
-    //DynamoDbTable<Employee> table =
-    //        enhancedClient.table("employees", TableSchema.fromBean(Employee.class));
-    //
-    //Key key = Key.builder()
-    //        .partitionValue(companyId)
-    //        .build();
-    //
-    //QueryConditional queryConditional =
-    //        QueryConditional.keyEqualTo(key);
-    //
-    //List<Employee> employees = table.query(queryConditional)
-    //        .stream()
-    //        .flatMap(page -> page.items().stream())
-    //        .toList();
 
-    public List<OrderModel> findAllCompanyOrders(String companyId){
-        Key key = Key.builder().partitionValue(companyId).build();
-        System.out.println("findAllCompanyOrders key: " + key);
-        QueryConditional queryConditional = QueryConditional.keyEqualTo(key);
-        System.out.println("findAllCompanyOrders query: " + queryConditional);
-        return orderTable.query(queryConditional).stream().flatMap(page -> page.items().stream()).toList();
+
+    public List<OrderModel> findByBusinessId(String businessId) {
+        return table.index("business-id")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(businessId)))
+                .stream().flatMap(page -> page.items().stream())
+                .toList();
     }
+
+    public List<OrderModel> findByTotalCost(Double totalCost) {
+        return table.index("total-cost")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(totalCost)))
+                .stream().flatMap(page -> page.items().stream())
+                .toList();
+    }
+
+    public List<OrderModel> findByStatus(String status) {
+        return table.index("status")
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(status)))
+                .stream().flatMap(page -> page.items().stream())
+                .toList();
+    }
+
+    public List<OrderModel> getLatestOrders(String clientId) {
+        int LIMIT = 10; // I think this is a good number for the latest client orders
+
+        // 1. Define the partition key condition
+        QueryConditional queryConditional = QueryConditional
+                .keyEqualTo(Key.builder().partitionValue(clientId).build());
+
+        // 2. Build the query request with ScanIndexForward = false
+        QueryEnhancedRequest queryRequest = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .scanIndexForward(false) // CRITICAL: false = Descending order (Newest -> Oldest)
+                .limit(LIMIT)            // Optional: pagination limit (e.g., top 10)
+                .build();
+
+        Page<OrderModel> firstPage = table.query(queryRequest)
+                .iterator()
+                .next(); // first page only — at most `limit` items
+
+        return firstPage.items();
+
+//        // 3. In case If If I want to get all items sorted by date
+//        return table.query(queryRequest)
+//                .items()
+//                .stream()
+//                .collect(Collectors.toList());
+    }
+
 }

@@ -1,0 +1,31 @@
+package dev.hope.vulcaobackend.Properties;
+
+import lombok.Getter;
+
+@Getter
+public enum BusinessType {
+    // ===== COMÉRCIO E RETALHO (Supermercados, Lojas e Eletrónica) =====
+    LOJA_DE_CONVENIÊNCIA,
+    SUPERMERCADO,
+    HIPERMERCADO,
+    GRANDES_ARMÁZENS,
+    CENTRO_COMERCIAL,
+    COMÉRCIO_ELETRÓNICO,
+    LOJA_DE_ELETRÓNICA_E_INFORMÁTICA,
+    FABRICANTE_DE_HARDWARE,
+
+    // ===== LIVROS, ENTRETENIMENTO E MEDIA (Filmes, Séries e TV) =====
+    LIVRARIA_E_EDITORIA,
+    CINEMA,
+    PRODUTORA_DE_CINEMA_E_TELEVISÃO,
+    SERVIÇO_DE_STREAMING,
+    CANAIS_DE_TELEVISÃO_E_RÁDIO,
+    EMPRESA_DE_VIDEOJOGOS,
+
+    // ===== OUTROS FORMATOS DE VENDA DE BENS =====
+    MERCADO_ABASTECEDOR,
+    LOJA_EM_SEGUNDA_MÃO,
+    RESTAURANTE,
+
+    OUTROS,
+}

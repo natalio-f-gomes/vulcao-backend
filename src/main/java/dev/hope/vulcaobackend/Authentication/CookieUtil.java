@@ -1,6 +1,5 @@
 package dev.hope.vulcaobackend.Authentication;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +14,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
-                .maxAge(Duration.ofHours(12))
+                .maxAge(Duration.ofHours(24))
                 .sameSite("Strict")
                 .build();
     }

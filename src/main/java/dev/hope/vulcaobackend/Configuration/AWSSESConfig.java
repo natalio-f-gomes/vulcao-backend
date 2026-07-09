@@ -1,56 +1,27 @@
 package dev.hope.vulcaobackend.Configuration;
 
-import dev.hope.vulcaobackend.Models.AccountEntities.UserModel;
-import dev.hope.vulcaobackend.Models.Common.Address;
-import dev.hope.vulcaobackend.Models.CompanyModel;
-import dev.hope.vulcaobackend.Models.Offerings.ProductModel;
-import dev.hope.vulcaobackend.Models.Offerings.WearableModel;
-import dev.hope.vulcaobackend.Models.Properties.OfferingType;
-import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
-import dev.hope.vulcaobackend.Models.Shopping.OrderItemModel;
-import dev.hope.vulcaobackend.Models.Shopping.OrderModel;
-import dev.hope.vulcaobackend.Repositories.CompanyRepository;
-import dev.hope.vulcaobackend.Repositories.Offerings.ProductRepository;
-import dev.hope.vulcaobackend.Repositories.Offerings.WearableRepository;
-import dev.hope.vulcaobackend.Repositories.UserRepository;
-import dev.hope.vulcaobackend.Services.Offerings.WearableService;
-import org.springframework.beans.factory.annotation.Autowired;
+
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.Order;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sesv2.SesV2Client;
 import software.amazon.awssdk.services.sesv2.model.*;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
+//TODO  wire the other repos
 @Configuration
 public class AWSSESConfig {
 
-    @Autowired
-    CompanyRepository companyRepository;
-    @Autowired
-    ProductRepository productRepository;
-    @Autowired
-    WearableRepository wearableRepository;
-    @Autowired
-    UserRepository userRepository;
+
     SesV2Client ses;
-    private WearableService wearableService;
 
 
-    public AWSSESConfig(AwsCredentialsProvider credentialsProvider, @Value("${ses.endpoint:}") String endpoint,
-                        CompanyRepository companyRepository,
-                        ProductRepository productRepository,
-                        WearableRepository wearableRepository,
-                        UserRepository userRepository,
-                        WearableService wearableService) {
+    public AWSSESConfig(AwsCredentialsProvider credentialsProvider, @Value("${ses.endpoint:}") String endpoint)
+                         {
         System.out.println("SES ENDPOINT: " + endpoint);
         var builder = SesV2Client.builder()
                 .credentialsProvider(credentialsProvider)
@@ -59,11 +30,7 @@ public class AWSSESConfig {
             builder.endpointOverride(URI.create(endpoint)); // tests only
         }
         this.ses = builder.build();
-        this.companyRepository = companyRepository;
-        this.productRepository = productRepository;
-        this.wearableRepository = wearableRepository;
-        this.userRepository = userRepository;
-        this.wearableService = wearableService;
+
     }
 
 

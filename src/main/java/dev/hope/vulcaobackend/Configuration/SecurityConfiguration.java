@@ -49,7 +49,7 @@ public class SecurityConfiguration {
         log.info("CSRF: DISABLED (stateless JWT API)");
         log.info("CORS: Configured via CorsConfigurationSource");
         log.info("Session: STATELESS");
-        log.info("Public paths: /api/v1/auth/**, /api/v1/public/**, /api/v1/actuator/**");
+        log.info("Public paths: /api/v2/auth/**, /api/v1/public/**, /api/v1/actuator/**");
 
 
         return httpSecurity
@@ -60,10 +60,9 @@ public class SecurityConfiguration {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/api/v1/public/**",
-                                "/api/v1/actuator/**",
-                                "/error"
+                                "/error",
+                                "/api/v2/auth/**",
+                                "/api/v2/public/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

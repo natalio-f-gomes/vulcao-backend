@@ -1,14 +1,15 @@
 package dev.hope.vulcaobackend.Models.Shopping;
 
-import dev.hope.vulcaobackend.Models.Common.BaseModelEntities;
-import dev.hope.vulcaobackend.Models.Properties.OrderStatus;
-import lombok.*;
+import dev.hope.vulcaobackend.Models.BaseModel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,50 +18,40 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderModel extends BaseModelEntities {
-    private String userId;
+public class OrderModel extends BaseModel {
 
-    private List<OrderItemModel> orderItems = new ArrayList<>();
-
-    @NonNull
-    private List<CartItemModel> cartItems = new ArrayList<>();
-
-    private OrderStatus status;
-    private Double totalCost;
+    List<OrderItem> items = new ArrayList<>();
+    private String clientId;
     private String trackId;
+    private String businessId;
+    private Double totalCost;
     private String note;
-
-    @NonNull
-    private String companyId;
+    private String status;
+    private Boolean canceled = false;
 
     @DynamoDbPartitionKey
-    public String getCompanyId() { return this.companyId; }
+    public String getClientId() { return this.clientId; }
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "track-id-index")
-    public String getTrackId() { return this.trackId; }
-
-    @DynamoDbSecondaryPartitionKey(indexNames = "user-id-index")
-    public String getUserId() { return this.userId; }
-
-    @DynamoDbSecondaryPartitionKey(indexNames = "id-index")
+    @DynamoDbSecondaryPartitionKey(indexNames = "order-id")
     public String getId() { return this.id; }
 
-    // SORT KEY — unique per order because it ends in the generated order id
+   @DynamoDbSecondaryPartitionKey(indexNames = "track-id")
+   public String getTrackId(){return this.trackId;}
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "business-id")
+    public String getBusinessId(){return this.businessId;}
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "total-cost")
+    public Double getTotalCost(){return this.totalCost;}
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "status")
+    public String getStatus(){return this.status;}
+
     @DynamoDbSortKey
-    public String getOrderKey() {
-        return this.companyId + "#" + this.userId + "$" + this.id;
-    }
-    public void setOrderKey(String orderKey) {
-        // no-operation
-    }
+    public String getCreatedAt(){return this.createdAt;}
 
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    @DynamoDbSecondaryPartitionKey(indexNames = "updated-at")
+    public String getUpdatedAt(){return this.updatedAt;}
 
-    public void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
 
 }
