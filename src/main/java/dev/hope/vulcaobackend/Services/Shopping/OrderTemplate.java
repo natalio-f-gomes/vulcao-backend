@@ -199,7 +199,7 @@ public class OrderTemplate {
     // ── Items + total ─────────────────────────────────────────────────────────
     public String getHtmlOrderSection(List<OrderItem> items, StringBuilder html, Double orderTotalCost) {
         html.append("<tr><td style='padding:24px 28px 8px;'>");
-        appendSectionTitle(html, "Produtos/Ofertas");
+        appendSectionTitle(html, "Ofertas");
         html.append("<table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0'>");
 
         String currency = "";
@@ -222,9 +222,20 @@ public class OrderTemplate {
             // Quantity + expiration
             html.append("<div style=\"font-family:").append(FONT_SANS).append(";font-size:13px;color:").append(MID).append(";margin-top:4px;\">")
                     .append("Quantidade: ").append(item.getQuantity());
-            if (item.getOffering().getProduct().getExpirationDate() != null) {
-                html.append(" &nbsp;&middot;&nbsp; Validade: ").append(item.getOffering().getProduct().getExpirationDate());
+            if(item.getOffering().getProduct() != null){
+                html.append("<br/> &nbsp;&middot;&nbsp; Tipo de produto: ").append(item.getOffering().getProduct().getProductType());
+                html.append("<br/> &nbsp;&middot;&nbsp; Validade: ").append(item.getOffering().getProduct().getExpirationDate());
+
             }
+            if(item.getOffering().getWearable() != null){
+                html.append("<br/> &nbsp;&middot;&nbsp; Marca: ").append(item.getOffering().getWearable().getBrand());
+                html.append("<br/> &nbsp;&middot;&nbsp; Cores: ").append(item.getOffering().getWearable().getColors());
+                html.append("<br/> &nbsp;&middot;&nbsp; Tamanho: ").append(item.getOffering().getWearable().getSize());
+                html.append("<br/> &nbsp;&middot;&nbsp; Materiais: ").append(item.getOffering().getWearable().getMaterial());
+                html.append("<br/> &nbsp;&middot;&nbsp; Tipo: ").append(item.getOffering().getWearable().getWearableType());
+
+            }
+
             html.append("</div>");
 
             // Description

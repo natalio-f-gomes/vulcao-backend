@@ -57,10 +57,6 @@ public class OfferingRepository {
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
                             EnhancedGlobalSecondaryIndex.builder()
-                                    .indexName("type")
-                                    .projection(p -> p.projectionType(ProjectionType.ALL))
-                                    .build(),
-                            EnhancedGlobalSecondaryIndex.builder()
                                     .indexName("business-id")
                                     .projection(p -> p.projectionType(ProjectionType.ALL))
                                     .build(),
@@ -104,12 +100,7 @@ public class OfferingRepository {
         }
     }
 
-    public List<OfferingModel> findByType(String type) {
-        return table.index("type")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(type)))
-                .stream().flatMap(page -> page.items().stream())
-                .toList();
-    }
+
     public List<OfferingModel> findByName(String name) {
         return table.index("name")
                 .query(QueryConditional.keyEqualTo(k -> k.partitionValue(name)))
@@ -173,6 +164,26 @@ public class OfferingRepository {
 
         QueryConditional queryConditional = QueryConditional
                 .keyEqualTo(Key.builder().partitionValue("PRODUCT").build());
+
+        QueryEnhancedRequest queryRequest = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .scanIndexForward(false)
+                .limit(LIMIT)
+                .build();
+
+        Page<OfferingModel> firstPage = index.query(queryRequest)
+                .iterator()
+                .next();
+
+        return firstPage.items();
+    }
+
+    public List<OfferingModel> find100LatestWearables() {
+        int LIMIT = 100;
+        DynamoDbIndex<OfferingModel> index = table.index("LatestIndex");
+
+        QueryConditional queryConditional = QueryConditional
+                .keyEqualTo(Key.builder().partitionValue("WEARABLE").build());
 
         QueryEnhancedRequest queryRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)

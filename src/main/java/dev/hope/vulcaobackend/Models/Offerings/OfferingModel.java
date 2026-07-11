@@ -30,13 +30,6 @@ public class OfferingModel extends BaseModel {
     protected String type;
     protected List<ImageMetadata> imagesMetadata =new ArrayList<>();
 
-    private String gsiLookUp;
-
-    @DynamoDbAttribute("gsiLookUp")
-    @DynamoDbSecondaryPartitionKey(indexNames = "LatestIndex")
-    public String getGsiLookUp() { return this.gsiLookUp; }
-
-
     @DynamoDbPartitionKey
     @DynamoDbSecondaryPartitionKey(indexNames = "business-id")
     public String getBusinessId(){return this.businessId;}
@@ -67,7 +60,8 @@ public class OfferingModel extends BaseModel {
     @DynamoDbSecondaryPartitionKey(indexNames = "stock")
     public Integer getStock(){return this.stock;}
 
-    @DynamoDbSecondaryPartitionKey(indexNames = "type")
+    @DynamoDbAttribute("type")
+    @DynamoDbSecondaryPartitionKey(indexNames = "LatestIndex")
     public String getType(){return this.type;}
 
     @DynamoDbSecondaryPartitionKey(indexNames = "unit")
@@ -79,5 +73,6 @@ public class OfferingModel extends BaseModel {
     //Products
     private ProductProperties product;
     //wearables
+    private WearableProperties wearable;
 
 }
