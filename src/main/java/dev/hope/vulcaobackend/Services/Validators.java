@@ -3,6 +3,7 @@ package dev.hope.vulcaobackend.Services;
 
 import dev.hope.vulcaobackend.DTOs.ImageMetadata;
 import dev.hope.vulcaobackend.DTOs.ProductDTO;
+import dev.hope.vulcaobackend.DTOs.WearableDTO;
 import dev.hope.vulcaobackend.Properties.*;
 import dev.hope.vulcaobackend.Properties.Currency;
 import dev.hope.vulcaobackend.Services.ExceptionHandler.ApiException;
@@ -16,8 +17,11 @@ import java.util.regex.Pattern;
 
 public class Validators {
 
-    public static void debugInput(String field){
-        System.out.println(field.toUpperCase() + "=[" + field + "] len=" + (field == null ? -1 : field.length()));
+    public static void debugInput(String... fields){
+        for(String field: fields){
+            System.out.println(field.toUpperCase() + "=[" + field + "] len=" + field.length());
+        }
+
     }
 
 
@@ -28,6 +32,8 @@ public class Validators {
     // Allows letters (\p{L}) and digits (\d) at the start, middle, and end.
     private static final Pattern FIELD_PATTERN =
             Pattern.compile("^[\\p{L}\\d][\\p{L}\\d '-]{1,20}[\\p{L}\\d]$|^[\\p{L}\\d]$");
+
+    private static final  String safeTextPattern = "^[\\p{L}0-9 +_.\\-/()&',!]+$";
 
 
 
@@ -185,6 +191,29 @@ public class Validators {
         }
     }
 
+    private static void validateBaseOffering(String name, Double price, Integer stock, String description){
+        if (name.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "O nome (ou título) do produto é obrigatório.");
+        }
+        if (price == null || price < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "O preço é obrigatório e não pode ser menor que zero.");
+        }
+        if (stock == null || stock < 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "A quantidade em estoque é obrigatória e não pode ser menor que zero.");
+        }
+
+        if (!description.isBlank()) {
+            if (description.length() > 500 || !description.matches(safeTextPattern)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "A descrição deve ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+            }
+        }
+        if (name.length() > 20 || !name.matches(safeTextPattern)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "O nome deve ter no máximo 20 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+        }
+    }
+
 
     public static void validateProduct(ProductDTO product) {
         if (product == null) {
@@ -198,50 +227,66 @@ public class Validators {
         Integer stock = product.getStock();
         String description = product.getDescription();
 
-        debugInput(name);
-        debugInput(price != null ? price.toString() : "null");
-        debugInput(stock != null ? stock.toString() : "null");
-        debugInput(description);
-        debugInput(product.getBusinessId());
-        debugInput(product.getCreatorId());
-        debugInput(product.getUpdatedBy());
-        debugInput(product.getCurrency());
-        debugInput(product.getUnit());
+        debugInput(name, price.toString(), stock.toString(), description, product.getBusinessId(), product.getCreatorId(), product.getUpdatedBy(),product.getCurrency(), product.getUnit() );
 
-        if (name == null || name.isBlank()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "O nome (ou título) do produto é obrigatório.");
-        }
-        if (price == null || price < 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "O preço do produto é obrigatório e não pode ser menor que zero.");
-        }
-        if (stock == null || stock < 0) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "A quantidade em estoque é obrigatória e não pode ser menor que zero.");
-        }
+
+        validateBaseOffering(name, price, stock, description);
+
         if(!product.getExpirationDate().isAfter(LocalDate.now())){
             throw new ApiException(HttpStatus.BAD_REQUEST, "A data de validade do produto deve ser posterior à data de hoje.");
         }
+    }
 
-        // 4. Pattern Validation
-        String safeTextPattern = "^[\\p{L}0-9 +_.\\-/()&',]+$";
 
-        if (name.length() > 20 || !name.matches(safeTextPattern)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "O nome deve ter no máximo 20 caracteres e não pode conter símbolos especiais inválidos.");
+    public static void validateWearable(WearableDTO wearable) {
+        if (wearable == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Os dados do vestível não foram enviados.");
         }
 
-        // Description is optional; validate only if provided
-        if (description != null && !description.isBlank()) {
-            if (description.length() > 500 || !description.matches(safeTextPattern)) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "A descrição deve ter no máximo 500 caracteres e não pode conter símbolos especiais inválidos.");
-            }
+        assertEnumFields(wearable.getCurrency(), wearable.getUnit());
+
+        String name = wearable.getName();
+        Double price = wearable.getPrice();
+        Integer stock = wearable.getStock();
+        String description = wearable.getDescription();
+        String brand = wearable.getBrand();
+        String colors = wearable.getColors();
+        String material = wearable.getMaterial();
+        String size = wearable.getSize();
+
+        debugInput(name, price.toString(), stock.toString(), description, wearable.getBusinessId(), wearable.getCreatorId(), wearable.getUpdatedBy(),wearable.getCurrency(),material, size, wearable.getUnit(), colors );
+
+
+        validateBaseOffering(name, price, stock, description);
+
+        if (brand == null || brand.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "A marca do produto é obrigatória.");
+        }
+        if (colors == null || colors.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "As cores do vestível são obrigatórias.");
         }
 
-        List<String> imgS3UrlKeys = product.getImgS3UrlKeys() != null
-                ? new ArrayList<>(product.getImgS3UrlKeys())
-                : new ArrayList<>();
+// Brand validation
+        if (brand.length() > 500 || !brand.matches(safeTextPattern)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "A marca deve ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+        }
 
-        List<ImageMetadata> imagesMetadata = product.getImagesMetadata() != null
-                ? new ArrayList<>(product.getImagesMetadata())
-                : new ArrayList<>();
+// Colors validation
+        if (colors.length() > 500 || !colors.matches(safeTextPattern)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "As cores devem ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+        }
+
+        if (material.length() > 500 || !material.matches(safeTextPattern)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Os materiais devem ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+        }
+
+        if (size.length() > 500 || !size.matches(safeTextPattern)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "O tamanho devem ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+        }
     }
 
 

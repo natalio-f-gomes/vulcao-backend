@@ -12,6 +12,7 @@ import dev.hope.vulcaobackend.Services.ExceptionHandler.ApiException;
 import dev.hope.vulcaobackend.Services.GlobalServices;
 import dev.hope.vulcaobackend.Services.Validators;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -50,35 +51,36 @@ public class ProductService {
         OfferingModel offering = offeringMapper.convertProductDtoToModel(product);
         String id = globalServices.generateOfferingId(OfferingType.PRODUCT);
         offering.setId(id);
-        offering.setGsiLookUp(OfferingType.PRODUCT.toString());
+        offering.setType(OfferingType.PRODUCT.toString());
         offeringRepository.save(offering);
         return id;
     }
 
     public List<ProductDTO> findAll(){
-        return offeringRepository.find100LatestProducts().stream().map(
-                offeringMapper::convertModelToProductDto
-        ).collect(Collectors.toList());
+            return offeringRepository.find100LatestProducts().stream().map(
+                    offeringMapper::convertModelToProductDto
+            ). filter(Objects::nonNull)
+                            . collect(Collectors.toList());
     }
 
 
     public List<ProductDTO> findByBusinessId(String companyId){
         return offeringRepository.findByBusinessId(companyId).stream().map(
                 offeringMapper::convertModelToProductDto
-        ).collect(Collectors.toList());
+        ).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
 
     public List<ProductDTO> findByCreatorId(String creatorId){
         return offeringRepository.findByCreatorId(creatorId).stream().map(
                 offeringMapper::convertModelToProductDto
-        ).collect(Collectors.toList());
+        ).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public List<ProductDTO> findByPrice(Double price){
         return offeringRepository.findByPrice(price).stream().map(
                 offeringMapper::convertModelToProductDto
-        ).collect(Collectors.toList());
+        ).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public ProductDTO findById(String id){
@@ -104,11 +106,4 @@ public class ProductService {
 
     }
 
-    public void delete(String id) {
-        String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        UserModel user = globalServices.validateAuthorization(sessionUser);
-        OfferingModel offering = offeringRepository.findById(id).orElseThrow(()->
-                new ApiException(HttpStatus.NOT_FOUND, "A oferta solicitada não foi encontrada."));
-        offeringRepository.delete(offering);
-    }
 }
