@@ -5,6 +5,7 @@ import dev.hope.vulcaobackend.Models.UserModel;
 import dev.hope.vulcaobackend.Properties.OfferingType;
 import dev.hope.vulcaobackend.Properties.UserType;
 import dev.hope.vulcaobackend.Repositories.BusinessRepository;
+import dev.hope.vulcaobackend.Repositories.FeedbackRepository;
 import dev.hope.vulcaobackend.Repositories.OfferingRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.Services.ExceptionHandler.ApiException;
@@ -31,6 +32,8 @@ public class GlobalServices {
     private BusinessRepository businessRepository;
     @Autowired
     private OfferingRepository offeringRepository;
+    @Autowired
+    private FeedbackRepository feedbackRepository;
 
 
     public String generateUserId(UserType type){
@@ -55,6 +58,16 @@ public class GlobalServices {
         }
         return  id;
     }
+
+    public String generateFeedbackId(){
+        String id = "feedback-" +  UUID.randomUUID();
+        while(feedbackRepository.findById(id).isPresent()){
+            id =  "feedback-" + UUID.randomUUID();
+        }
+        return  id;
+    }
+
+
 
 
     public void isUsernameTaken(String username){

@@ -1,0 +1,5 @@
+package dev.hope.vulcaobackend.Properties;
+
+public enum FeedbackType {
+    LOJA_COMPRAS, CARRINHO_ENCOMENDAS, PERFIL, PAINEL_DE_CONTROLO, PAGAMENTOS, OUTROS, VISUAL_DO_WEBSITE, FUNCIONALIDADE, PROBLEMA
+}
