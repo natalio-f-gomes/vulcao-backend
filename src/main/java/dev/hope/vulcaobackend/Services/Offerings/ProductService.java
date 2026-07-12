@@ -12,7 +12,6 @@ import dev.hope.vulcaobackend.Services.ExceptionHandler.ApiException;
 import dev.hope.vulcaobackend.Services.GlobalServices;
 import dev.hope.vulcaobackend.Services.Validators;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;

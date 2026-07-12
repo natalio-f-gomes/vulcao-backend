@@ -62,7 +62,8 @@ public class SecurityConfiguration {
                         .requestMatchers(
                                 "/error",
                                 "/api/v2/auth/**",
-                                "/api/v2/public/**"
+                                "/api/v2/public/**",
+                                "/api/v2/actuator/"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

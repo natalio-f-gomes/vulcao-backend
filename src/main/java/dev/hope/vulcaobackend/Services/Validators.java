@@ -1,9 +1,8 @@
 package dev.hope.vulcaobackend.Services;
 
-
-import dev.hope.vulcaobackend.DTOs.ImageMetadata;
 import dev.hope.vulcaobackend.DTOs.ProductDTO;
 import dev.hope.vulcaobackend.DTOs.WearableDTO;
+import dev.hope.vulcaobackend.Models.FeedbackModel;
 import dev.hope.vulcaobackend.Properties.*;
 import dev.hope.vulcaobackend.Properties.Currency;
 import dev.hope.vulcaobackend.Services.ExceptionHandler.ApiException;
@@ -254,7 +253,7 @@ public class Validators {
         String material = wearable.getMaterial();
         String size = wearable.getSize();
 
-        debugInput(name, price.toString(), stock.toString(), description, wearable.getBusinessId(), wearable.getCreatorId(), wearable.getUpdatedBy(),wearable.getCurrency(),material, size, wearable.getUnit(), colors );
+        debugInput(name, price.toString(), stock.toString(), description, wearable.getBusinessId(), wearable.getCreatorId(), wearable.getUpdatedBy(), wearable.getCurrency(), material, size, wearable.getUnit(), colors);
 
 
         validateBaseOffering(name, price, stock, description);
@@ -286,6 +285,40 @@ public class Validators {
         if (size.length() > 500 || !size.matches(safeTextPattern)) {
             throw new ApiException(HttpStatus.BAD_REQUEST,
                     "O tamanho devem ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+        }
+    }
+
+
+    public static void validateFeedback(FeedbackModel feedback){
+        if(feedback == null){throw new ApiException(HttpStatus.BAD_REQUEST, "the feed back cannot be null");}
+        String name = feedback.getName();
+        String type = feedback.getFeedbackType();
+        String email = feedback.getEmail();
+        Integer votes =feedback.getVotes();
+        String description = feedback.getDescription();
+        String status = feedback.getStatus();
+        try{
+            assert(name != null && email != null && type != null && votes != null && description != null && status !=null);
+            validateEmail(email);
+            if(name.length() > 20 || !name.matches(safeTextPattern)){
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "O Nome devem ter no máximo 20 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+            }
+            if(description.length() > 500 || !description.matches(safeTextPattern)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "A descricao devem ter no máximo 500 caracteres. São permitidos apenas letras, números e os caracteres: + _ . - / ( ) & ' , !");
+            }
+            if(votes < 0){
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Votes cannot be negative");
+            }
+            Enum.valueOf(FeedbackType.class, type);
+            Enum.valueOf(RequestStatus.class, status);
+        }catch (NullPointerException e){
+            System.out.println(e);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "The fields name, email, type, description and status are mandatory");
+        }catch (IllegalArgumentException e){
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid type or status");
         }
     }
 
