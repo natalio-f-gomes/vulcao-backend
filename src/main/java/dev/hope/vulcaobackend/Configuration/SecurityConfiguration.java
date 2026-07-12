@@ -49,7 +49,7 @@ public class SecurityConfiguration {
         log.info("CSRF: DISABLED (stateless JWT API)");
         log.info("CORS: Configured via CorsConfigurationSource");
         log.info("Session: STATELESS");
-        log.info("Public paths: /api/v2/auth/**, /api/v1/public/**, /api/v1/actuator/**");
+        log.info("Public paths: /api/v2/auth/**, /api/v1/public/**, /api/v2/actuator/**");
 
 
         return httpSecurity
@@ -63,7 +63,7 @@ public class SecurityConfiguration {
                                 "/error",
                                 "/api/v2/auth/**",
                                 "/api/v2/public/**",
-                                "/api/v2/actuator/health"
+                                "/api/v2/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
