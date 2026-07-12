@@ -13,6 +13,7 @@ public class FeedbackService {
     private GlobalServices globalServices;
 
     public void save(FeedbackModel feedback){
+        System.out.println("Feedback Email: " + feedback.getEmail());
         Validators.validateFeedback(feedback);
            String id =  globalServices.generateFeedbackId();
            feedback.setId(id);

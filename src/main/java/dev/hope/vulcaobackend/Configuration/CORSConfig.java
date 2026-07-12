@@ -16,7 +16,7 @@ public class CORSConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // frontend URL
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://vulcao.net", "https://www.vulcao.net"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "https://vulcao.net", "https://www.vulcao.net"));
 
         // allowed HTTP methods
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
