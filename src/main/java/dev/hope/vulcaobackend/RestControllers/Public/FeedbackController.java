@@ -2,6 +2,7 @@ package dev.hope.vulcaobackend.RestControllers.Public;
 
 import dev.hope.vulcaobackend.Configuration.AWSSESConfig;
 import dev.hope.vulcaobackend.Models.FeedbackModel;
+import dev.hope.vulcaobackend.Models.UserModel;
 import dev.hope.vulcaobackend.Repositories.FeedbackRepository;
 import dev.hope.vulcaobackend.Repositories.UserRepository;
 import dev.hope.vulcaobackend.Services.FeedbackService;
@@ -13,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v2/public/feedback")
@@ -35,13 +37,19 @@ public class FeedbackController {
     @PostMapping("/request")
     public ResponseEntity<?> feedbackRequest( @RequestBody FeedbackModel feedback){
         String sessionUser = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        if(userRepository.findByUsername(sessionUser).isEmpty()){
+        Optional<UserModel> user = userRepository.findByUsername(sessionUser);
+        if(user.isEmpty()){
+            System.out.println("The user is empty");
             Validators.validateEmail(feedback.getEmail());
             String randomCode = mfaService.save(feedback.getEmail());
             sesService.sendCode(feedback.getEmail(), randomCode);
             return ResponseEntity.accepted().build();
+        }else{
+            UserModel userModel = user.get();
+            feedback.setEmail(userModel.getEmail());
+            feedback.setName(userModel.getFirstName() + " " + userModel.getLastName());
+            feedbackService.save(feedback);
         }
-        feedbackService.save(feedback);
         return ResponseEntity.ok().build();
     }
 
