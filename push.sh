@@ -22,8 +22,5 @@ git init
 git add .
 read -p "Enter commit message: " message
 git commit -m "$message"
-<<<<<<< HEAD
+
 git push -u origin main
-=======
-git push -u origin artisan
->>>>>>> origin/main
