@@ -63,7 +63,7 @@ public class SecurityConfiguration {
                                 "/error",
                                 "/api/v2/auth/**",
                                 "/api/v2/public/**",
-                                "/api/v2/actuator/"
+                                "/api/v2/actuator/health"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
